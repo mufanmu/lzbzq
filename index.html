@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>梁子变祖器</title>
+<style>
+  /* ===== Claude 风格设计规范（DESIGN.md） ===== */
+  :root {
+    --canvas: #faf9f5;
+    --surface-soft: #f5f0e8;
+    --surface-card: #efe9de;
+    --surface-cream-strong: #e8e0d2;
+    --surface-dark: #181715;
+    --surface-dark-elevated: #252320;
+    --surface-dark-soft: #1f1e1b;
+    --hairline: #e6dfd8;
+    --hairline-soft: #ebe6df;
+    --ink: #141413;
+    --body: #3d3d3a;
+    --body-strong: #252523;
+    --muted: #6c6a64;
+    --muted-soft: #8e8b82;
+    --primary: #cc785c;
+    --primary-active: #a9583e;
+    --primary-disabled: #e6dfd8;
+    --on-primary: #ffffff;
+    --on-dark: #faf9f5;
+    --on-dark-soft: #a09d96;
+    --accent-teal: #5db8a6;
+    --accent-amber: #e8a55a;
+    --success: #5db872;
+    --error: #c64545;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-pill: 9999px;
+    --serif: "Copernicus", "Tiempos Headline", "EB Garamond", "Songti SC", "STSong", "Noto Serif SC", Georgia, serif;
+    --sans: "StyreneB", "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--canvas);
+    color: var(--body);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+
+  /* ---- 头部：衬线大标题，编辑风 ---- */
+  header { text-align: center; padding: 40px 0 24px; }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 40px; line-height: 1.1; letter-spacing: -0.5px;
+    color: var(--ink);
+  }
+  h1 .spike { color: var(--primary); }
+  .sub { margin-top: 10px; color: var(--muted); font-size: 14px; }
+
+  /* ---- 卡片体系：cream 卡 / 线框卡 / 深色展示卡 ---- */
+  .card { border-radius: var(--radius-lg); }
+  .card-cream { background: var(--surface-card); }
+  .card-line { background: var(--canvas); border: 1px solid var(--hairline); }
+  .card-dark { background: var(--surface-dark); color: var(--on-dark); }
+
+  /* ---- 状态栏 ---- */
+  #status {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px; margin-bottom: 16px;
+  }
+  #tier-big { font-family: var(--serif); font-weight: 400; font-size: 30px; color: var(--ink); }
+  .badge {
+    display: inline-block; background: var(--primary); color: var(--on-primary);
+    font-size: 12px; font-weight: 500; letter-spacing: 1.5px;
+    padding: 4px 12px; border-radius: var(--radius-pill);
+    margin-left: 10px; vertical-align: middle;
+  }
+  #value-box { text-align: right; }
+  #value { font-family: var(--serif); font-weight: 400; font-size: 34px; color: var(--ink); }
+  .lbl { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+
+  /* ---- 变祖器图片 ---- */
+  #rheostat-card { position: relative; margin-bottom: 10px; }
+  #rheostat-img {
+    display: block; width: 100%; border-radius: var(--radius-md);
+    cursor: default; user-select: none; -webkit-user-select: none;
+    -webkit-user-drag: none;
+  }
+  #slider-indicator img {
+    display: block; width: 100%; height: auto;
+    user-select: none; -webkit-user-select: none; -webkit-user-drag: none;
+    pointer-events: auto; cursor: grab;      /* 只能在 lz 切图上拖动 */
+  }
+  body.dragging { cursor: grabbing !important; }
+  #img-placeholder {
+    position: absolute; inset: 0; display: none;
+    align-items: center; justify-content: center;
+    border: 1px dashed var(--hairline); border-radius: var(--radius-md);
+    color: var(--muted); font-size: 14px; line-height: 1.9; text-align: center;
+    background: var(--surface-soft);
+  }
+  #rheostat-stage { position: relative; }
+  #slider-indicator {
+    position: absolute; top: -19%;              /* lz 顶部相对 bzq 顶部 -19% */
+    width: 14.286%;                              /* 260/1820：滑块宽占底图 */
+    left: 0; transform: translateX(-50%);        /* 滑块中心对齐点位 */
+    pointer-events: none; z-index: 2;
+  }
+  #slider-indicator img { display: block; width: 100%; height: auto; }
+  #slider-indicator::after {
+    content: attr(data-pct); position: absolute; bottom: -26px; left: 50%; transform: translateX(-50%);
+    font-size: 12px; color: var(--on-dark); background: var(--primary);
+    padding: 2px 8px; border-radius: var(--radius-pill); white-space: nowrap;
+  }
+  .click-hint { text-align: center; color: var(--muted); font-size: 13px; margin: 4px 0 18px; }
+
+  /* ---- 确认投票 ---- */
+  #vote-panel { text-align: center; margin: 4px 0 16px; }
+  #pick-msg { font-size: 14px; color: var(--body); margin-bottom: 10px; min-height: 20px; }
+  #pick-msg .v { color: var(--primary-active); font-weight: 500; }
+  #pick-msg .d { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  #confirm-btn {
+    background: var(--primary); color: var(--on-primary);
+    font-family: var(--sans); font-size: 14px; font-weight: 500; line-height: 1;
+    padding: 12px 20px; height: 40px;
+    border: none; border-radius: var(--radius-md); cursor: pointer;
+    transition: background 0.15s;
+  }
+  #confirm-btn:hover:not(:disabled) { background: var(--primary-active); }
+  #confirm-btn:disabled { background: var(--primary-disabled); color: var(--muted); cursor: not-allowed; }
+  #vote-msg { min-height: 20px; font-size: 14px; text-align: center; margin-bottom: 14px; }
+  #vote-msg.done { color: var(--primary-active); }
+  #vote-msg.err { color: var(--error); }
+  #hot-review {
+    display: none; margin: 0 auto 14px; max-width: 460px;
+    background: var(--surface-soft); border: 1px solid var(--hairline);
+    border-radius: var(--radius-md); padding: 10px 16px;
+    font-size: 13px; color: var(--body); text-align: center;
+  }
+
+  /* ---- 时间线 ---- */
+  #timeline-wrap { padding: 22px 24px; margin-bottom: 16px; }
+  h2 {
+    font-family: var(--serif); font-weight: 400; font-size: 22px;
+    color: var(--ink); margin-bottom: 14px;
+  }
+  #timeline { list-style: none; max-height: 340px; overflow-y: auto; }
+  #timeline li {
+    border-left: 2px solid var(--hairline); padding: 8px 0 10px 14px;
+    margin-left: 6px; position: relative;
+  }
+  #timeline li::before {
+    content: ""; position: absolute; left: -6px; top: 14px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--canvas); border: 2px solid var(--hairline);
+  }
+  #timeline li .date { font-size: 12px; color: var(--muted-soft); }
+  #timeline li .row { font-size: 15px; margin-top: 2px; color: var(--ink); }
+  #timeline li .tier-badge {
+    display: inline-block; padding: 1px 10px; border-radius: var(--radius-pill);
+    font-size: 12px; font-weight: 500; background: var(--surface-card);
+    color: var(--ink); margin-right: 8px;
+  }
+  #timeline li .notes { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  #timeline li .notes .up { color: var(--success); }
+  #timeline li .notes .down { color: var(--error); }
+  #timeline li .dist { font-size: 11px; color: var(--muted-soft); margin-top: 3px; }
+  #timeline .empty { border-left: none; padding-left: 0; color: var(--muted); font-size: 13px; }
+  #timeline .empty::before { display: none; }
+
+  /* ---- 页脚：无填充，置于页面最下方 ---- */
+  footer {
+    background: transparent; color: var(--muted);
+    padding: 28px 20px 48px; text-align: center; margin-top: 8px;
+  }
+  footer .disclaimer { font-size: 12px; }
+  footer .divine {
+    margin-top: 8px; font-size: 14px; color: var(--body);
+    font-family: var(--serif); font-style: italic;
+  }
+
+  /* ---- toast：深色 + 珊瑚描边 ---- */
+  #toast {
+    position: fixed; top: 18px; left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--surface-dark); color: var(--on-dark);
+    border: 1px solid var(--primary);
+    padding: 13px 24px; border-radius: var(--radius-lg);
+    font-size: 15px; z-index: 99; text-align: center; pointer-events: none;
+    box-shadow: 0 10px 34px rgba(20, 20, 19, 0.35);
+    opacity: 0; transition: all 0.35s; max-width: 90vw;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  @media (max-width: 520px) {
+    h1 { font-size: 32px; }
+    #status { padding: 16px 18px; }
+    #timeline-wrap { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="spike">✳</span> 梁子变祖器</h1>
+    <p class="sub">风评阻尼器 · 每日一票 · 娱乐向</p>
+  </header>
+
+  <section id="status" class="card card-cream">
+    <div>
+      <span id="tier-big">梁子</span><span class="badge" id="tier-badge">当前档位</span>
+    </div>
+    <div id="value-box">
+      <div id="value">50%</div>
+      <div class="lbl">今日电阻</div>
+    </div>
+  </section>
+
+  <section id="rheostat-card">
+    <div id="rheostat-stage">
+      <img id="rheostat-img" src="images/bzq.png" alt="变祖器，拖动滑块打分" draggable="false">
+      <div id="slider-indicator" data-pct="50%">
+        <img id="slider-img" src="images/lz-2.png" alt="" draggable="false">
+      </div>
+    </div>
+    <div id="img-placeholder">变祖器底图缺失<br><b>images/bzq.png</b><br>（当前为占位，点击仍可打分）</div>
+  </section>
+  <p class="click-hint">🖐 拖动滑块到目标数值，松开后点「确认投票」</p>
+
+  <section id="vote-panel">
+    <div id="pick-msg">拖动滑块选择数值</div>
+    <button id="confirm-btn" disabled>确认投票</button>
+  </section>
+
+  <div id="vote-msg"></div>
+  <div id="hot-review"></div>
+
+  <section id="timeline-wrap" class="card card-line">
+    <h2>📜 事件记录</h2>
+    <ul id="timeline"></ul>
+  </section>
+</div>
+
+<footer>
+  <p class="disclaimer">娱乐项目，与官方无关 · 数据仅存于本浏览器</p>
+  <p class="divine">风评再低谷，也无人以 ÷ 称他——AI 圈皆知，÷ 永远只属于那一个人。</p>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- 配置 ---------- */
+  var TIERS = [
+    { name: '梁神',       value: 100, emoji: '😇', color: '#c2853b', desc: '震惊四座，全网封神',
+      memes: ['梁神！——核弹爆炸般的力量', '全网都在等一个梁神时刻', '梁神降临，美股震动', '封神之路，从此刻开始'] },
+    { name: '梁圣',       value: 83,  emoji: '🙏', color: '#cc785c', desc: '开源精神拉满，「感谢梁圣开源」是最高礼赞',
+      memes: ['梁圣的恩情还不完！', '感谢梁圣开源，AI 圈的反核导弹', '梁圣一出手，就知有没有', '圣人之恩，降价以报'] },
+    { name: '梁文锋叔叔', value: 67,  emoji: '🧧', color: '#b0703c', desc: '量化收割散户，早上领国补、晚上领美股',
+      memes: ['早上领国补，晚上领美股', '美股，就是梁文锋叔叔的提款机', '量化一出手，散户两行泪', '国补美股两头吃，散户韭菜地里哭'] },
+    { name: '梁子',       value: 50,  emoji: '😐', color: '#8e8b82', desc: '与「良子」谐音，食言太多吃成了梁子',
+      memes: ['梁圣，还是梁子？——凭产品表现定称呼', '食言太多，吃成了梁子', '和网红良子撞名的男人', '梁子本子，说好的发布呢'] },
+    { name: '牢梁',       value: 33,  emoji: '🕳', color: '#5f6b7a', desc: '晋升牢字辈，与牢大、牢张并称互联网三幻神',
+      memes: ['牢字辈三幻神，恭迎牢梁归位', '牢大、牢张、牢梁，互联网三幻神', '牢里牢气，但还有机会翻案', '关于恢复梁文锋名誉的决定（待发布）'] },
+    { name: '小难梁',     value: 17,  emoji: '🥀', color: '#5a4a42', desc: '跳票太久地位再降，小难梁拿不出大赢鲸',
+      memes: ['小难梁拿不出大赢鲸', '深陷时空裂缝，无法自拔', '跳票跳进了小难梁', '小难梁：我太难了'] },
+    { name: '梁西皮',     value: 0,   emoji: '🖤', color: '#3d3a35', desc: '江浙骂娘口头禅谐音，风评谷底',
+      memes: ['互联网的尽头是抽象', '风评谷底，江浙问候', '梁西皮——听懂了都沉默了', '跌至谷底，仍在抽象'] }
+  ];
+  function randomMeme(t) {
+    return t.memes[Math.floor(Math.random() * t.memes.length)];
+  }
+  var MIN_VOTES = 10;      // 低票保护：当天票数少于该值，滑块保持昨日位置
+  var START_VALUE = 50;    // 初始电阻
+  var STORAGE_KEY = 'liangzi-rheostat-v3';   // v3: 清空历史事件记录，全新开始
+  var HOT_MIN = 10;        // 今日热评解锁所需当日票数
+
+  /* ---------- 工具 ---------- */
+  function dateStr(d) {
+    var m = String(d.getMonth() + 1);
+    var day = String(d.getDate());
+    if (m.length < 2) m = '0' + m;
+    if (day.length < 2) day = '0' + day;
+    return d.getFullYear() + '-' + m + '-' + day;
+  }
+  function todayStr() { return dateStr(new Date()); }
+  function avg(arr) {
+    var s = 0;
+    for (var i = 0; i < arr.length; i++) s += arr[i];
+    return s / arr.length;
+  }
+  function round1(x) { return Math.round(x * 10) / 10; }
+  function tierOf(v) {           // 最近档位（等价于按档位中点划分区间）
+    var best = TIERS[0], bd = Infinity;
+    for (var i = 0; i < TIERS.length; i++) {
+      var d = Math.abs(TIERS[i].value - v);
+      if (d < bd) { bd = d; best = TIERS[i]; }
+    }
+    return best;
+  }
+
+  /* ---------- 状态与持久化 ---------- */
+  function defaultState() {
+    return {
+      lastDate: todayStr(),
+      todayVotes: [],
+      startValue: START_VALUE,   // 今天开始时的值（= 昨日终值，继承）
+      timeline: [],
+      lastVoteDate: null
+    };
+  }
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var s = JSON.parse(raw);
+        if (s && typeof s.lastDate === 'string' && Array.isArray(s.todayVotes)) return s;
+      }
+    } catch (e) {}
+    return defaultState();
+  }
+  function saveState() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  /* ---------- 结算 ---------- */
+  function settleDay(date, votes, startValue) {
+    var end = votes.length ? avg(votes) : startValue;
+    var tier = tierOf(end);
+    var notes = [];
+    if (votes.length && end >= 100) notes.push('💥 满格「梁神」：核弹爆炸般的力量！！');
+    else if (votes.length && end <= 0) notes.push('🕳 归零「梁西皮」：小难梁拿不出大赢鲸');
+    var prevTier = tierOf(startValue);
+    if (tier.name !== prevTier.name) {
+      notes.push((end > startValue ? '📈 升级：' : '📉 降级：') + prevTier.name + ' → ' + tier.name);
+    }
+    var dist = {};
+    votes.forEach(function (v) { var n = tierOf(v).name; dist[n] = (dist[n] || 0) + 1; });
+    return {
+      date: date, end: round1(end), tier: tier.name,
+      tierEmoji: tier.emoji, tierColor: tier.color,
+      votes: votes.slice(), notes: notes, dist: dist
+    };
+  }
+  function ensureNewDay() {
+    var today = todayStr();
+    if (state.lastDate !== today) {
+      var prevTier = tierOf(state.startValue).name;
+      var rec = settleDay(state.lastDate, state.todayVotes, state.startValue);
+      state.startValue = rec.end;   // 继承昨日终值
+      state.todayVotes = [];
+      state.lastDate = today;
+      if (rec.tier !== prevTier) state.timeline.unshift(rec);  // 只记录档位变化
+      saveState();
+    }
+  }
+
+  /* ---------- 目标值（低票保护） ---------- */
+  function targetValue() {
+    if (state.todayVotes.length < MIN_VOTES) return state.startValue;
+    return avg(state.todayVotes);
+  }
+
+  /* ---------- DOM 引用 ---------- */
+  var elTier = document.getElementById('tier-big');
+  var elBadge = document.getElementById('tier-badge');
+  var elValue = document.getElementById('value');
+  var elMsg = document.getElementById('vote-msg');
+  var elHot = document.getElementById('hot-review');
+  var elTimeline = document.getElementById('timeline');
+  var wrap = document.getElementById('rheostat-card');
+  var img = document.getElementById('rheostat-img');
+  var indicator = document.getElementById('slider-indicator');
+  var sliderImg = document.getElementById('slider-img');
+  var pickMsg = document.getElementById('pick-msg');
+  var confirmBtn = document.getElementById('confirm-btn');
+  var placeholder = document.getElementById('img-placeholder');
+  var toastEl = document.getElementById('toast');
+  var toastTimer = null;
+  function toast(text) {
+    toastEl.textContent = text;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 3400);
+  }
+
+  /* ---------- 渲染 ---------- */
+  function renderStatus() {
+    var t = tierOf(displayValue);
+    elTier.textContent = t.emoji + ' ' + t.name;
+    elTier.style.color = t.color;
+    elBadge.textContent = t.name;
+    elValue.textContent = Math.round(displayValue) + '%';
+    // 今日热评：当日票数达阈值后，显示得票最多档位的梗句
+    if (state.todayVotes.length >= HOT_MIN) {
+      var counts = {};
+      state.todayVotes.forEach(function (v) {
+        var n = tierOf(v).name;
+        counts[n] = (counts[n] || 0) + 1;
+      });
+      var bestName = null, bestN = 0;
+      for (var k in counts) if (counts[k] > bestN) { bestN = counts[k]; bestName = k; }
+      var bt = null;
+      for (var i = 0; i < TIERS.length; i++) if (TIERS[i].name === bestName) { bt = TIERS[i]; break; }
+      elHot.style.display = 'block';
+      elHot.innerHTML = '🔥 今日热评：' + bestN + ' 人投「' + bt.emoji + ' ' + bt.name + '」——' + randomMeme(bt);
+    } else {
+      elHot.style.display = 'none';
+    }
+  }
+  function renderTimeline() {
+    elTimeline.innerHTML = '';
+    if (!state.timeline.length) {
+      var li = document.createElement('li');
+      li.className = 'empty';
+      li.textContent = '暂无记录——档位变化会记在这里。';
+      elTimeline.appendChild(li);
+      return;
+    }
+    state.timeline.forEach(function (r) {
+      var li = document.createElement('li');
+      var row = document.createElement('div');
+      row.className = 'row';
+      var badge = document.createElement('span');
+      badge.className = 'tier-badge';
+      badge.style.color = r.tierColor;
+      badge.textContent = r.tierEmoji + ' ' + r.tier;
+      row.appendChild(badge);
+      row.appendChild(document.createTextNode('终值 ' + r.end + '%'));
+      li.appendChild(row);
+      var date = document.createElement('div');
+      date.className = 'date';
+      date.textContent = r.date + ' · 共 ' + r.votes.length + ' 票';
+      li.appendChild(date);
+      if (r.notes.length) {
+        var notes = document.createElement('div');
+        notes.className = 'notes';
+        notes.innerHTML = r.notes.map(function (n) {
+          return n.indexOf('📈') === 0 ? '<span class="up">' + n + '</span>'
+               : n.indexOf('📉') === 0 ? '<span class="down">' + n + '</span>' : n;
+        }).join(' ');
+        li.appendChild(notes);
+      }
+      var dist = Object.keys(r.dist);
+      if (dist.length) {
+        var d = document.createElement('div');
+        d.className = 'dist';
+        d.textContent = dist.map(function (k) { return k + '×' + r.dist[k]; }).join('  ');
+        li.appendChild(d);
+      }
+      elTimeline.appendChild(li);
+    });
+  }
+
+  /* ---------- 投票：拖动滑块选择 → 确认提交 ---------- */
+  function doVote(v) {
+    var today = todayStr();
+    if (state.lastVoteDate === today) {
+      elMsg.className = 'err';
+      elMsg.textContent = '今天已经投过啦，明天再来～';
+      return false;
+    }
+    state.todayVotes.push(v);
+    state.lastVoteDate = today;
+    saveState();
+    renderStatus();                          // 刷新状态栏与热评区
+    var t = tierOf(v);
+    elMsg.className = 'done';
+    elMsg.textContent = '已投 ' + v + '%（' + t.emoji + ' ' + t.name + '）';
+    var tgt = targetValue();
+    if (tgt >= 100) toast('💥 梁神！——核弹爆炸般的力量！！');
+    else if (tgt <= 0) toast('🕳 归零达成「梁西皮」—— 即便此刻，也无人以 ÷ 称他');
+    else toast(t.emoji + ' ' + randomMeme(t));
+    return true;
+  }
+  var selectedValue = null;
+  var mode = 'idle';   // idle: 滑块向社区均值逼近 | drag: 拖动中 | pick: 松开待确认
+  function setFromPointer(clientX) {
+    var rect = img.getBoundingClientRect();
+    var x = clientX - rect.left;
+    var w = img.clientWidth || rect.width || 1;
+    var xOrig = x / w * IMG_W;                 // 换算到底图原坐标
+    displayValue = xToValue(xOrig);
+    velocity = 0;
+    selectedValue = displayValue;
+    updateIndicator();                         // 拖动即时渲染
+    var t = tierOf(selectedValue);
+    pickMsg.innerHTML = '当前选中：<span class="v">' + Math.round(selectedValue) + '%（' + t.emoji + ' ' + t.name + '）</span><span class="d">' + t.desc + '</span>';
+    confirmBtn.disabled = false;
+  }
+  function resetPick() {
+    selectedValue = null;
+    pickMsg.textContent = '拖动滑块选择数值';
+    confirmBtn.disabled = true;
+  }
+  sliderImg.addEventListener('mousedown', function (e) {
+    mode = 'drag';
+    document.body.classList.add('dragging');
+    setFromPointer(e.clientX);
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function (e) { if (mode === 'drag') setFromPointer(e.clientX); });
+  document.addEventListener('mouseup', function () {
+    if (mode === 'drag') { mode = 'pick'; document.body.classList.remove('dragging'); }
+  });
+  sliderImg.addEventListener('touchstart', function (e) {
+    mode = 'drag';
+    document.body.classList.add('dragging');
+    setFromPointer(e.touches[0].clientX);
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('touchmove', function (e) {
+    if (mode === 'drag') { setFromPointer(e.touches[0].clientX); e.preventDefault(); }
+  }, { passive: false });
+  document.addEventListener('touchend', function () {
+    if (mode === 'drag') { mode = 'pick'; document.body.classList.remove('dragging'); }
+  });
+  wrap.addEventListener('contextmenu', function (e) { e.preventDefault(); });   // 禁止右键图片
+  confirmBtn.addEventListener('click', function () {
+    if (selectedValue === null) return;
+    if (doVote(Math.round(selectedValue))) {
+      resetPick();
+      mode = 'idle';   // 确认后滑块阻尼滑向社区均值
+    }
+  });
+
+  /* ---------- 阻尼动画（滑块指示器） ---------- */
+  var displayValue = START_VALUE;
+  var velocity = 0;
+  var STIFFNESS = 0.055, DAMPING = 0.86, BOUNCE = 0.45;
+  var SLIDER_W_RATIO = 260 / 1820;   // 滑块图宽 / 底图宽
+  var IMG_W = 1820;                  // 底图原宽
+  var IMG_H = 600;                   // 底图原高
+  // 档位点位（底图原坐标 x，从左到右：梁神 → 梁西皮），滑块中心对齐
+  var TRACK = [
+    { v: 100, x: 275 },   // 梁神
+    { v: 83,  x: 498 },   // 梁圣
+    { v: 67,  x: 698 },   // 梁文锋叔叔
+    { v: 50,  x: 905 },   // 梁子
+    { v: 33,  x: 1111 },  // 牢梁
+    { v: 17,  x: 1338 },  // 小难梁
+    { v: 0,   x: 1546 }   // 梁西皮
+  ];
+  function valueToX(v) {            // 数值 → 底图横坐标（线性插值）
+    for (var i = 0; i < TRACK.length - 1; i++) {
+      var a = TRACK[i], b = TRACK[i + 1];
+      if (v <= a.v && v >= b.v) return a.x + (v - a.v) / (b.v - a.v) * (b.x - a.x);
+    }
+    return v > TRACK[0].v ? TRACK[0].x : TRACK[TRACK.length - 1].x;
+  }
+  function xToValue(x) {            // 底图横坐标 → 数值（线性插值）
+    for (var i = 0; i < TRACK.length - 1; i++) {
+      var a = TRACK[i], b = TRACK[i + 1];
+      if (x >= a.x && x <= b.x) return a.v + (x - a.x) / (b.x - a.x) * (b.v - a.v);
+    }
+    return x < TRACK[0].x ? TRACK[0].v : TRACK[TRACK.length - 1].v;
+  }
+  var sliderN = 0;
+  function sliderNumFor(v) { return v <= 25 ? 1 : v <= 50 ? 2 : v <= 75 ? 3 : 4; }
+  function updateIndicator() {
+    indicator.style.left = (valueToX(displayValue) / IMG_W * 100) + '%';
+    indicator.setAttribute('data-pct', Math.round(displayValue) + '%');
+    var n = sliderNumFor(displayValue);
+    if (n !== sliderN) { sliderN = n; sliderImg.src = 'images/lz-' + n + '.png'; }
+  }
+  function animate() {
+    if (mode === 'idle') {
+      var target = targetValue();
+      velocity += (target - displayValue) * STIFFNESS;
+      velocity *= DAMPING;
+      displayValue += velocity;
+      if (displayValue < 0) { displayValue = 0; velocity = Math.abs(velocity) * BOUNCE; }
+      if (displayValue > 100) { displayValue = 100; velocity = -Math.abs(velocity) * BOUNCE; }
+      if (Math.abs(velocity) < 0.002 && Math.abs(target - displayValue) < 0.002) displayValue = target;
+    } else {
+      velocity = 0;   // 拖动/待确认时滑块保持当前位置
+    }
+    updateIndicator();
+    requestAnimationFrame(animate);
+  }
+
+  /* ---------- 图片占位 ---------- */
+  img.addEventListener('error', function () {
+    placeholder.style.display = 'flex';
+  });
+  if (img.complete && img.naturalWidth === 0) {
+    placeholder.style.display = 'flex';
+  }
+
+  /* ---------- 启动 ---------- */
+  var state = loadState();
+  ensureNewDay();
+  displayValue = state.startValue;
+  renderStatus();
+  renderTimeline();
+  resetPick();
+  animate();
+})();
+</script>
+</body>
+</html>
