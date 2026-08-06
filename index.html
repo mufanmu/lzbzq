@@ -99,6 +99,24 @@
     background: var(--surface-soft);
   }
   #rheostat-stage { position: relative; }
+  /* ---- 弹幕层（z 轴最上） ---- */
+  #danmaku {
+    position: absolute; top: 0; left: 0; right: 0; height: 30%;
+    pointer-events: none; overflow: hidden; z-index: 5;
+  }
+  .dm-row { position: absolute; left: 0; right: 0; height: 26px; }
+  .dm-row.r1 { top: 6%; }
+  .dm-row.r2 { top: 15%; }
+  .dm-item {
+    position: absolute; left: 100%; top: 0; white-space: nowrap;
+    background: rgba(24, 23, 21, 0.72); color: #faf9f5;
+    font-size: 13px; padding: 3px 12px; border-radius: 9999px;
+    animation: dm-scroll linear forwards;
+  }
+  @keyframes dm-scroll {
+    from { left: 100%; }
+    to { left: -100%; }
+  }
   #slider-indicator {
     position: absolute; top: -19%;              /* lz 顶部相对 bzq 顶部 -19% */
     width: 14.286%;                              /* 260/1820：滑块宽占底图 */
@@ -176,6 +194,9 @@
     margin-top: 8px; font-size: 14px; color: var(--body);
     font-family: var(--serif); font-style: italic;
   }
+  footer .gh { margin-top: 12px; font-size: 13px; }
+  footer .gh a { color: var(--primary); text-decoration: none; }
+  footer .gh a:hover { text-decoration: underline; }
 
   /* ---- toast：深色 + 珊瑚描边 ---- */
   #toast {
@@ -220,6 +241,10 @@
       <div id="slider-indicator" data-pct="50%">
         <img id="slider-img" src="images/lz-2.png" alt="" draggable="false">
       </div>
+      <div id="danmaku">
+        <div class="dm-row r1"></div>
+        <div class="dm-row r2"></div>
+      </div>
     </div>
     <div id="img-placeholder">变祖器底图缺失<br><b>images/bzq.png</b><br>（当前为占位，拖动仍可打分）</div>
   </section>
@@ -242,6 +267,7 @@
 <footer>
   <p class="disclaimer">娱乐项目，与官方无关 · 每日一票 · 数据存于云端</p>
   <p class="divine">风评再低谷，也无人以 ÷ 称他——AI 圈皆知，÷ 永远只属于那一个人。</p>
+  <p class="gh"><a href="https://github.com/mufanmu/lzbzq" target="_blank" rel="noopener">GitHub: github.com/mufanmu/lzbzq</a></p>
 </footer>
 
 <div id="toast"></div>
@@ -330,6 +356,41 @@
   async function fetchState() {
     var res = await fetch('/api/state');
     server = await res.json();
+    updateDmQueue();
+  }
+
+  /* ---------- 弹幕：两行，时间 + 投票选项 ---------- */
+  var dmRows = [document.querySelector('.dm-row.r1'), document.querySelector('.dm-row.r2')];
+  var dmQueue = [];
+  var dmCursor = 0;
+  function updateDmQueue() {
+    dmQueue = (server && server.recentVotes) ? server.recentVotes.slice() : [];
+    dmCursor = 0;
+  }
+  function playDm(row) {
+    if (dmCursor >= dmQueue.length) {
+      dmCursor = 0;
+      row._timer = setTimeout(function () { playDm(row); }, 2500);   // 播完暂停再循环
+      return;
+    }
+    var item = dmQueue[dmCursor++];
+    var tier = tierOf(item.v);
+    var span = document.createElement('span');
+    span.className = 'dm-item';
+    span.textContent = item.t + ' · 投了 ' + tier.emoji + ' ' + tier.name;
+    var dur = Math.max(5, 3.5 + span.textContent.length * 0.1);
+    span.style.animationDuration = dur + 's';
+    span.addEventListener('animationend', function () {
+      span.remove();
+      playDm(row);
+    });
+    row.appendChild(span);
+  }
+  function startDanmaku() {
+    if (dmRows[0]._started) return;
+    dmRows[0]._started = true;
+    playDm(dmRows[0]);
+    setTimeout(function () { playDm(dmRows[1]); }, 2600);   // 第二行错开
   }
 
   /* ---------- 渲染 ---------- */
@@ -532,7 +593,13 @@
     displayValue = server.startValue;
     resetPick();
     renderAll();
+    startDanmaku();
     animate();
+    setInterval(function () {                    // 轻量轮询：弹幕与热评保持新鲜
+      fetchState().then(function () {
+        renderAll();
+      }).catch(function () {});
+    }, 10000);
   }).catch(function () {
     pickMsg.textContent = '加载失败，请刷新重试';
     animate();

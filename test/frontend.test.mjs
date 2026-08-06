@@ -28,13 +28,15 @@ function makeEl(id) {
   return el;
 }
 const docHandlers = {};
+const qsEls = {};
 const globalThis_ = globalThis;
 globalThis_.document = {
   body: { classList: { add() {}, remove() {} }, style: {} },
   getElementById(id) { if (!els[id]) els[id] = makeEl(id); return els[id]; },
   createElement() { return makeEl('el'); },
   createTextNode(t) { return { textContent: t }; },
-  addEventListener(t, fn) { docHandlers[t] = fn; }
+  addEventListener(t, fn) { docHandlers[t] = fn; },
+  querySelector(sel) { if (!qsEls[sel]) qsEls[sel] = makeEl('qs-' + sel.replace(/[^a-z0-9]/gi, '')); return qsEls[sel]; }
 };
 
 /* ---------- fetch stub：模拟服务端 ---------- */
@@ -47,7 +49,10 @@ let serverState = {
     votes: 20, notes: ['📈 升级：梁子 → 梁圣'], dist: { '梁圣': 20 }
   }],
   votedToday: false,
-  hot: { name: '梁文锋叔叔', emoji: '🧧', color: '#b0703c', votes: 9 }
+  hot: { name: '梁文锋叔叔', emoji: '🧧', color: '#b0703c', votes: 9 },
+  recentVotes: [
+    { t: '14:02', v: 100 }, { t: '14:05', v: 50 }, { t: '14:08', v: 83 }
+  ]
 };
 const fetchCalls = [];
 globalThis_.fetch = async (url, opts) => {
@@ -109,6 +114,13 @@ docHandlers.mousemove(evt(700));
 docHandlers.mouseup();
 chk('仍可预览但确认保持禁用', confirmBtn.disabled === true);
 chk('toast 显示梁神梗句', document.getElementById('toast').textContent.includes('梁神') || document.getElementById('toast').textContent.length > 0);
+
+console.log('弹幕:');
+const dmRow1 = document.querySelector('.dm-row.r1');
+const dmRow2 = document.querySelector('.dm-row.r2');
+chk('第一行弹幕已播放（时间+选项）', dmRow1.children.length === 1 && dmRow1.children[0].textContent.includes('14:02') && dmRow1.children[0].textContent.includes('梁神'), JSON.stringify(dmRow1.children[0].textContent));
+await new Promise((r) => setTimeout(r, 2700));   // 等第二行（2600ms 错开）播放
+chk('第二行弹幕已播放（错开）', dmRow2.children.length === 1 && dmRow2.children[0].textContent.includes('14:05') && dmRow2.children[0].textContent.includes('梁子'));
 
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 process.exit(fail ? 1 : 0);

@@ -38,6 +38,8 @@ const store = createMemoryStore();
 
   let st = await computeState(store, '1.1.1.1', DAY1);
   chk('当日 3 票', st.todayVotes === 3, JSON.stringify(st.todayVotes));
+  chk('弹幕事件 3 条（正序：最早在前）', st.recentVotes.length === 3 && st.recentVotes[0].v === 100 && st.recentVotes[2].v === 0, JSON.stringify(st.recentVotes));
+  chk('弹幕含北京时间', /^\d{2}:\d{2}$/.test(st.recentVotes[0].t), st.recentVotes[0].t);
   chk('低票保护：<10 票显示 startValue 50', st.todayValue === 50 && st.startValue === 50);
   chk('IP1 今日已投', st.votedToday === true);
   st = await computeState(store, '9.9.9.9', DAY1);
