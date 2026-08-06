@@ -401,8 +401,24 @@
   var dmQueue = [];
   var dmCursor = 0;
   function updateDmQueue() {
-    dmQueue = (server && server.recentVotes) ? server.recentVotes.slice() : [];
-    dmCursor = 0;
+    var fresh = (server && server.recentVotes) ? server.recentVotes : [];
+    if (!dmQueue.length) {                 // 首次：整队列初始化
+      dmQueue = fresh.slice();
+      dmCursor = 0;
+      return;
+    }
+    // 轮询：只追加新事件，不重置播放指针（否则永远播前两条）
+    var last = dmQueue[dmQueue.length - 1];
+    var idx = -1;
+    for (var i = fresh.length - 1; i >= 0; i--) {
+      if (fresh[i].t === last.t && fresh[i].v === last.v) { idx = i; break; }
+    }
+    if (idx >= 0 && idx < fresh.length - 1) {
+      dmQueue = dmQueue.concat(fresh.slice(idx + 1));
+    } else if (idx < 0) {
+      dmQueue = fresh.slice();             // 窗口滑动找不到旧尾 → 重建
+      dmCursor = 0;
+    }
   }
   function playDm(row) {
     if (dmCursor >= dmQueue.length) {
