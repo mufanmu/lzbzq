@@ -67,9 +67,8 @@ globalThis_.fetch = async (url, opts) => {
   throw new Error('unknown url ' + url);
 };
 
-/* ---------- rAF stub：有限帧（setTimeout/clearTimeout 用 node 原生异步） ---------- */
-let rafCount = 0;
-globalThis_.requestAnimationFrame = (fn) => { if (rafCount++ < 120) fn(); };
+/* ---------- rAF stub：真实异步逐帧（16ms/帧） ---------- */
+globalThis_.requestAnimationFrame = (fn) => { setTimeout(() => fn(), 16); };
 
 /* ---------- 执行页面脚本 ---------- */
 new Function(script)();
@@ -90,7 +89,8 @@ console.log('初始渲染:');
 chk('调用了 /api/state', fetchCalls.includes('/api/state'));
 chk('状态栏档位 = 梁文锋叔叔', document.getElementById('tier-big').textContent.includes('梁文锋叔叔'), document.getElementById('tier-big').textContent);
 chk('badge 数值标签 62%', document.getElementById('tier-badge').textContent === '62%', document.getElementById('tier-badge').textContent);
-chk('今日电阻大字即时显示 62%（不等动画）', document.getElementById('value').textContent === '62%', document.getElementById('value').textContent);
+const indEl = document.getElementById('slider-indicator');
+chk('大字与滑块气泡同步（初始）', document.getElementById('value').textContent === indEl['data-pct'], document.getElementById('value').textContent + ' vs ' + indEl['data-pct']);
 chk('当日变动提示（梁子 → 梁文锋叔叔 +12%）', document.getElementById('tier-change').innerHTML.includes('梁子') && document.getElementById('tier-change').innerHTML.includes('梁文锋叔叔') && document.getElementById('tier-change').innerHTML.includes('+12.0'), document.getElementById('tier-change').innerHTML);
 chk('热评区显示', document.getElementById('hot-review').innerHTML.includes('今日热评') && document.getElementById('hot-review').innerHTML.includes('9 人'), document.getElementById('hot-review').innerHTML);
 chk('时间线渲染 1 条', document.getElementById('timeline').children.length === 1 && document.getElementById('timeline').children[0].children.length >= 2, 'li children=' + document.getElementById('timeline').children[0].children.length);
@@ -110,7 +110,7 @@ confirmBtn.handlers.click();
 await new Promise((r) => setTimeout(r, 30));
 chk('POST /api/vote 已调用', fetchCalls.includes('/api/vote'));
 chk('已投提示', document.getElementById('vote-msg').textContent.includes('已投 100%'));
-chk('确认后大字回到社区值 62%', document.getElementById('value').textContent === '62%', document.getElementById('value').textContent);
+chk('确认后大字跟随滑块回落（同步）', document.getElementById('value').textContent === indEl['data-pct'] && parseInt(document.getElementById('value').textContent) < 100, document.getElementById('value').textContent);
 chk('投后服务端状态更新（今日票数 16）', serverState.todayVotes === 16);
 chk('投后 votedToday 锁定', document.getElementById('pick-msg').textContent.includes('今日已投'));
 chk('确认按钮禁用', confirmBtn.disabled === true);
