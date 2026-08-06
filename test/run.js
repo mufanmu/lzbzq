@@ -75,6 +75,14 @@ const store = createMemoryStore();
   const rec2 = settleDay('2026-08-02', [0], 50);
   chk('归零记录', rec2.end === 0 && rec2.notes.join('').indexOf('归零') >= 0);
 
+  // 模拟 @vercel/kv lrange 自动解析 JSON（对象形式）——parseJsonSafe 需兼容
+  const store2 = createMemoryStore();
+  const origLrange = store2.lrange.bind(store2);
+  store2.lrange = async (k, s, e) => (await origLrange(k, s, e)).map((x) => JSON.parse(x));
+  await submitVote(store2, '1.1.1.1', 83, DAY1);
+  const st2 = await computeState(store2, '1.1.1.1', DAY1);
+  chk('对象形式 lrange 也能解析出弹幕', st2.recentVotes.length === 1 && st2.recentVotes[0].v === 83, JSON.stringify(st2.recentVotes));
+
   console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
   process.exit(fail ? 1 : 0);
 })();
