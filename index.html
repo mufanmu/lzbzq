@@ -192,6 +192,7 @@
   #timeline li .notes .up { color: var(--success); }
   #timeline li .notes .down { color: var(--error); }
   #timeline li .dist { font-size: 11px; color: var(--muted-soft); margin-top: 3px; }
+  #timeline li .meme { font-size: 12px; color: var(--muted); margin-top: 5px; }
   #timeline .empty { border-left: none; padding-left: 0; color: var(--muted); font-size: 13px; }
   #timeline .empty::before { display: none; }
 
@@ -279,7 +280,7 @@
   <div id="hot-review"><div id="hot-slide"></div></div>
 
   <section id="timeline-wrap" class="card card-line">
-    <h2>📜 事件记录</h2>
+    <h2>📜 一周风评</h2>
     <ul id="timeline"></ul>
   </section>
 </div>
@@ -301,19 +302,19 @@
   /* ---------- 档位与梗句（前端展示用，计算以服务端为准） ---------- */
   var TIERS = [
     { name: '梁神',       value: 100, emoji: '😇', color: '#c2853b', desc: '震惊四座，全网封神',
-      memes: ['梁神！——核弹爆炸般的力量', '全网都在等一个梁神时刻', '梁神降临，美股震动', '封神之路，从此刻开始'] },
+      memes: ['梁神！——核弹爆炸般的力量', '全网都在等一个梁神时刻', '梁神降临，美股震动', '封神之路，从此刻开始', '满格梁神，华尔街连夜改口叫爸爸', '这波不叫梁神，叫梁财神', '核弹已发射，梁神正在登基'] },
     { name: '梁圣',       value: 83,  emoji: '🙏', color: '#cc785c', desc: '开源精神拉满，「感谢梁圣开源」是最高礼赞',
-      memes: ['梁圣的恩情还不完！', '感谢梁圣开源，AI 圈的反核导弹', '梁圣一出手，就知有没有', '圣人之恩，降价以报'] },
+      memes: ['梁圣的恩情还不完！', '感谢梁圣开源，AI 圈的反核导弹', '梁圣一出手，就知有没有', '圣人之恩，降价以报', '梁圣在上，散户顶礼膜拜', '开源圣人，降价的活菩萨', '今日梁圣，明天就是梁神'] },
     { name: '梁叔', value: 67,  emoji: '🧧', color: '#b0703c', desc: '量化收割散户，早上领国补、晚上领美股',
-      memes: ['早上领国补，晚上领美股', '美股，就是梁叔的提款机', '量化一出手，散户两行泪', '国补美股两头吃，散户韭菜地里哭'] },
+      memes: ['早上领国补，晚上领美股', '美股，就是梁叔的提款机', '量化一出手，散户两行泪', '国补美股两头吃，散户韭菜地里哭', '梁叔的镰刀，从不落空', '美股开盘，梁叔上班', '国补照领，美股照赚，散户照哭'] },
     { name: '梁子',       value: 50,  emoji: '😐', color: '#8e8b82', desc: '与「良子」谐音，食言太多吃成了梁子',
-      memes: ['梁圣，还是梁子？——凭产品表现定称呼', '食言太多，吃成了梁子', '和网红良子撞名的男人', '梁子本子，说好的发布呢'] },
+      memes: ['梁圣，还是梁子？——凭产品表现定称呼', '食言太多，吃成了梁子', '和网红良子撞名的男人', '梁子本子，说好的发布呢', '梁子不哭，说好的发布马上来', '今日份梁子，稳如老狗', '梁子：我再也不鸽了（下次一定）'] },
     { name: '牢梁',       value: 33,  emoji: '🕳', color: '#5f6b7a', desc: '晋升牢字辈，与牢大、牢张并称互联网三幻神',
-      memes: ['牢字辈三幻神，恭迎牢梁归位', '牢大、牢张、牢梁，互联网三幻神', '牢里牢气，但还有机会翻案', '关于恢复梁叔名誉的决定（待发布）'] },
+      memes: ['牢字辈三幻神，恭迎牢梁归位', '牢大、牢张、牢梁，互联网三幻神', '牢里牢气，但还有机会翻案', '关于恢复梁叔名誉的决定（待发布）', '牢梁已就位，静候翻案', '铁窗泪，梁子流', '牢底坐穿，风评垫底'] },
     { name: '小难梁',     value: 17,  emoji: '🥀', color: '#5a4a42', desc: '跳票太久地位再降，小难梁拿不出大赢鲸',
-      memes: ['小难梁拿不出大赢鲸', '深陷时空裂缝，无法自拔', '跳票跳进了小难梁', '小难梁：我太难了'] },
+      memes: ['小难梁拿不出大赢鲸', '深陷时空裂缝，无法自拔', '跳票跳进了小难梁', '小难梁：我太难了', '大赢鲸还在深海，小难梁还在等待', '时间裂缝里，小难梁独自美丽', '赢鲸未至，难梁先行'] },
     { name: '梁西皮',     value: 0,   emoji: '🖤', color: '#3d3a35', desc: '江浙骂娘口头禅谐音，风评谷底',
-      memes: ['互联网的尽头是抽象', '风评谷底，江浙问候', '梁西皮——听懂了都沉默了', '跌至谷底，仍在抽象'] }
+      memes: ['互联网的尽头是抽象', '风评谷底，江浙问候', '梁西皮——听懂了都沉默了', '跌至谷底，仍在抽象', '谷底的风，是梁西皮的味道', '抽象到底，梁西皮万岁', '江浙沪唯一指定骂娘梗'] }
   ];
   function randomMeme(t) {
     return t.memes[Math.floor(Math.random() * t.memes.length)];
@@ -452,6 +453,7 @@
   var dmRows = [document.querySelector('.dm-row.r1'), document.querySelector('.dm-row.r2'), document.querySelector('.dm-row.r3')];
   var dmQueue = [];
   var dmCursor = 0;
+  var dmPaused = false;            // 页面隐藏时暂停弹幕与轮询，省后台资源
   function updateDmQueue() {
     var fresh = (server && server.recentVotes) ? server.recentVotes : [];
     if (!dmQueue.length) {                 // 首次：整队列初始化
@@ -473,6 +475,7 @@
     }
   }
   function playDm(row) {
+    if (dmPaused) { row._timer = setTimeout(function () { playDm(row); }, 1200); return; }
     if (dmCursor >= dmQueue.length) {
       dmCursor = 0;
       row._timer = setTimeout(function () { playDm(row); }, 1200);   // 播完暂停再循环
@@ -544,7 +547,7 @@
     if (!server || !server.timeline.length) {
       var li = document.createElement('li');
       li.className = 'empty';
-      li.textContent = '暂无记录——档位变化会记在这里。';
+      li.textContent = '暂无记录——投票的日子会记在这里。';
       elTimeline.appendChild(li);
       return;
     }
@@ -578,6 +581,12 @@
         d.className = 'dist';
         d.textContent = dist.map(function (k) { return k + '×' + r.dist[k]; }).join('  ');
         li.appendChild(d);
+      }
+      if (r.meme) {                              // 梗句收尾；旧记录无 meme 时降级不渲染
+        var meme = document.createElement('div');
+        meme.className = 'meme';
+        meme.textContent = '「' + r.meme + '」';
+        li.appendChild(meme);
       }
       elTimeline.appendChild(li);
     });
@@ -718,17 +727,39 @@
   }
 
   /* ---------- 启动 ---------- */
+  var POLL_MS = 15000;             // 减压：轮询 5s→15s（弹幕有 40 条缓冲，体感无差）
+  var pollTimer = null;
+  function startPolling() {
+    if (pollTimer) return;
+    pollTimer = setInterval(function () {      // 轻量轮询：弹幕与热评保持新鲜
+      fetchState().then(function () {
+        renderAll();
+      }).catch(function () {});
+    }, POLL_MS);
+  }
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) {
+      stopPolling();             // 后台标签页是最大浪费源：暂停轮询与弹幕
+      dmPaused = true;
+    } else {
+      dmPaused = false;
+      fetchState().then(function () {          // 恢复可见：立即补拉一次
+        renderAll();
+      }).catch(function () {});
+      startPolling();
+    }
+  });
+
   animate();                                   // 先启动动画循环，fetch 未回时滑块也已就位
   fetchState().then(function () {
     displayValue = server.startValue;          // 从今日起点阻尼滑向社区均值
     resetPick();
     renderAll();
     startDanmaku();
-    setInterval(function () {                  // 轻量轮询（5s）：弹幕与热评保持新鲜
-      fetchState().then(function () {
-        renderAll();
-      }).catch(function () {});
-    }, 5000);
+    startPolling();
   }).catch(function () {
     pickMsg.textContent = '加载失败，请刷新重试';
   });

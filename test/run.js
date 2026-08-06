@@ -2,7 +2,7 @@
  * 后端核心逻辑测试（内存 store + 可控时钟）
  * 运行：node test/run.js
  */
-import { createMemoryStore, computeState, submitVote, ensureNewDay, beijingDateStr, settleDay, tierOf } from '../lib/core.js';
+import { createMemoryStore, computeState, submitVote, ensureNewDay, beijingDateStr, settleDay, tierOf, memeOf } from '../lib/core.js';
 
 let pass = 0, fail = 0;
 function chk(name, cond, detail) {
@@ -53,27 +53,43 @@ const store = createMemoryStore();
   chk('热评出现（梁神票最多）', st.hot && st.hot.name === '梁神', JSON.stringify(st.hot));
   chk('voteDist 有分布', Object.keys(st.voteDist).length >= 2, JSON.stringify(st.voteDist));
 
-  // 跨天结算：8-07 无新票 → 结算 8-06
+  // 跨天结算：8-07 无新票 → 结算 8-06（8-06 有票 → 写入每日总结）
   let s = await ensureNewDay(store, DAY2);
   chk('跨天继承昨日终值', s.lastDate === '2026-08-07' && s.startValue > 50, JSON.stringify(s));
-  // 8-06 结算档位 vs 初始 50（梁子）→ 记录一条
   st = await computeState(store, '1.1.1.1', DAY2);
-  chk('档位变化已记录（timeline=1）', st.timeline.length === 1, JSON.stringify(st.timeline[0]));
+  chk('每日一条：8-06 总结已记录（timeline=1）', st.timeline.length === 1, JSON.stringify(st.timeline[0]));
+  chk('总结带稳定梗句', typeof st.timeline[0].meme === 'string' && st.timeline[0].meme.length > 0, st.timeline[0].meme);
+  chk('同一天梗幂等', st.timeline[0].meme === memeOf('2026-08-06', tierOf(st.timeline[0].end)), st.timeline[0].meme);
 
-  // 8-07 投同档位 → 不记录
+  // 8-07 投 10 票（100）→ 8-08 结算 8-07：有票即写入（不论档位变不变，同档位场景由下方 8 天循环覆盖）
   for (let i = 0; i < 10; i++) await submitVote(store, 'ip' + i + '.x', 100, DAY2);
-  // 等等，需要算均值档位——上面 startValue 是 8-06 终值（约 78.5 梁圣？）… 直接断言行为：无档位变化则 timeline 不变
-  const tlBefore = (await ensureNewDay(store, DAY3)) && null;
-  // 8-08 结算 8-07：若档位与 8-06 相同则不加记录
+  await ensureNewDay(store, DAY3);
   st = await computeState(store, '1.1.1.1', DAY3);
-  const tier7 = tierOf((await ensureNewDay(store, DAY2)) ? (st.todayValue) : 0);
-  chk('跨天两日后时间线仍有限', st.timeline.length <= 2, 'len=' + st.timeline.length);
+  chk('同档位日也写入（timeline=2）', st.timeline.length === 2, 'len=' + st.timeline.length);
+
+  // 8-08 无票 → 8-09 结算时跳过不占位
+  const DAY4 = new Date(T0 + 3 * 86400000);
+  await ensureNewDay(store, DAY4);
+  st = await computeState(store, '1.1.1.1', DAY4);
+  chk('无票日跳过（timeline 仍 2）', st.timeline.length === 2, 'len=' + st.timeline.length);
+
+  // 连续 8 个有票日 → 循环覆盖只留 7 条，最旧一天被挤出
+  const store3 = createMemoryStore();
+  for (let d = 0; d < 8; d++) {
+    await submitVote(store3, 'a.b.c.d', 50, new Date(T0 + d * 86400000));
+    await ensureNewDay(store3, new Date(T0 + (d + 1) * 86400000));
+  }
+  st = await computeState(store3, '1.1.1.1', new Date(T0 + 8 * 86400000));
+  chk('循环覆盖：只留 7 条', st.timeline.length === 7, 'len=' + st.timeline.length);
+  chk('最旧一天被挤出（剩 8-07..8-13）', st.timeline[6].date === '2026-08-07', st.timeline.map((r) => r.date).join(','));
 
   // settleDay 纯函数
   const rec = settleDay('2026-08-01', [100, 100, 100], 50);
   chk('满格记录含核弹', rec.end === 100 && rec.notes.join('').indexOf('核弹') >= 0);
+  chk('满格记录带梁神梗', rec.meme && rec.tier === '梁神' && rec.meme.indexOf('梁神') >= 0, rec.meme);
   const rec2 = settleDay('2026-08-02', [0], 50);
   chk('归零记录', rec2.end === 0 && rec2.notes.join('').indexOf('归零') >= 0);
+  chk('归零记录带梁西皮梗', rec2.meme && rec2.tier === '梁西皮', rec2.meme);
 
   // 模拟 @vercel/kv lrange 自动解析 JSON（对象形式）——parseJsonSafe 需兼容
   const store2 = createMemoryStore();
