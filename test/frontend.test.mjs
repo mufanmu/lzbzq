@@ -100,13 +100,17 @@ chk('滑块动画目标 62%', document.getElementById('slider-indicator').style.
 console.log('投票流程:');
 sliderImg.handlers.mousedown(evt(0));    // 拖到左端 100
 docHandlers.mousemove(evt(0));
+chk('拖动时大字跟手 100%', document.getElementById('value').textContent === '100%', document.getElementById('value').textContent);
+chk('拖动时珊瑚标签不跟（仍 62%）', document.getElementById('tier-badge').textContent === '62%', document.getElementById('tier-badge').textContent);
 docHandlers.mouseup();
+chk('松开后大字保持预览 100%', document.getElementById('value').textContent === '100%');
 chk('拖动选中 100% 梁神', document.getElementById('pick-msg').innerHTML.includes('100%') && document.getElementById('pick-msg').innerHTML.includes('梁神'));
 chk('确认按钮可用', confirmBtn.disabled === false);
 confirmBtn.handlers.click();
 await new Promise((r) => setTimeout(r, 30));
 chk('POST /api/vote 已调用', fetchCalls.includes('/api/vote'));
 chk('已投提示', document.getElementById('vote-msg').textContent.includes('已投 100%'));
+chk('确认后大字回到社区值 62%', document.getElementById('value').textContent === '62%', document.getElementById('value').textContent);
 chk('投后服务端状态更新（今日票数 16）', serverState.todayVotes === 16);
 chk('投后 votedToday 锁定', document.getElementById('pick-msg').textContent.includes('今日已投'));
 chk('确认按钮禁用', confirmBtn.disabled === true);

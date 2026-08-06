@@ -241,7 +241,7 @@
       <div id="tier-change"></div>
     </div>
     <div id="value-box">
-      <div id="value">50%</div>
+      <div id="value">—</div>
       <div class="lbl">今日电阻</div>
     </div>
   </section>
@@ -406,8 +406,10 @@
     if (!server) return;
     elTier.textContent = server.tierEmoji + ' ' + server.tier;
     elTier.style.color = server.tierColor;
-    elBadge.textContent = server.todayValue + '%';     // 数值标签（即时精确值）
-    elValue.textContent = Math.round(server.todayValue) + '%';   // 今日电阻：直接显示前端已拿到的最新值，不等动画
+    elBadge.textContent = server.todayValue + '%';     // 数值标签（社区即时值，不跟拖动）
+    if (mode === 'idle') {                             // 静止时：大字 = 社区即时值；拖动/预览中保持跟手值
+      elValue.textContent = Math.round(server.todayValue) + '%';
+    }
     // 当日变动提示：今日起始档位 → 当前档位
     var startTier = tierOf(server.startValue);
     var delta = server.todayValue - server.startValue;
@@ -495,6 +497,7 @@
     displayValue = xToValue(xOrig);
     velocity = 0;
     selectedValue = displayValue;
+    elValue.textContent = Math.round(displayValue) + '%';   // 拖动时「今日电阻」跟手
     updateIndicator();
     if (server && server.votedToday) return;   // 已投：可预览但不可确认
     var t = tierOf(selectedValue);
