@@ -522,9 +522,14 @@
     }
     if (server.hot) {
       hotSlides = buildHotSlides();
-      hotIdx = 0;
       elHot.style.display = 'block';
-      showHotSlide();
+      if (hotSlides.length) {
+        if (hotIdx === 0) {
+          showHotSlide();                                        // 首次：从第 1 条开始
+        } else {
+          hotSlide.textContent = hotSlides[(hotIdx - 1) % hotSlides.length];   // 轮询：保持当前条，只更新内容
+        }
+      }
     } else {
       hotSlides = [];
       elHot.style.display = 'none';

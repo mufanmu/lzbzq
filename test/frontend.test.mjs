@@ -94,10 +94,11 @@ chk('大字与滑块气泡同步（初始）', document.getElementById('value').
 chk('当日变动提示（梁子 → 梁叔 +12%）', document.getElementById('tier-change').innerHTML.includes('梁子') && document.getElementById('tier-change').innerHTML.includes('梁叔') && document.getElementById('tier-change').innerHTML.includes('+12.0'), document.getElementById('tier-change').innerHTML);
 chk('热评区显示（今日热评条目）', document.querySelector('#hot-slide').textContent.includes('今日热评') && document.querySelector('#hot-slide').textContent.includes('9 人'), document.querySelector('#hot-slide').textContent);
 await new Promise((r) => setTimeout(r, 6300));   // 等 6s 轮播
-console.log('轮播实际内容: ' + JSON.stringify(document.querySelector('#hot-slide').textContent));
-chk('热评轮播切换（均值条目）', document.querySelector('#hot-slide').textContent.includes('今日均值'), document.querySelector('#hot-slide').textContent);
-await new Promise((r) => setTimeout(r, 6300));   // 等 6s 轮播
-chk('轮播含参与人数条目', document.getElementById('hot-review').textContent.includes('人参与投票') || true);
+chk('热评轮播第 2 条（均值）', document.querySelector('#hot-slide').textContent.includes('今日均值'), document.querySelector('#hot-slide').textContent);
+await new Promise((r) => setTimeout(r, 6000));
+chk('热评轮播第 3 条（顶流/断层）', document.querySelector('#hot-slide').textContent.includes('🥇'), document.querySelector('#hot-slide').textContent);
+await new Promise((r) => setTimeout(r, 6000));
+chk('热评轮播第 4 条（无人投/参与人数）', document.querySelector('#hot-slide').textContent.includes('无人投') || document.querySelector('#hot-slide').textContent.includes('参与投票'), document.querySelector('#hot-slide').textContent);
 chk('时间线渲染 1 条', document.getElementById('timeline').children.length === 1 && document.getElementById('timeline').children[0].children.length >= 2, 'li children=' + document.getElementById('timeline').children[0].children.length);
 chk('未投状态可拖动', document.getElementById('pick-msg').textContent.includes('拖动滑块'));
 chk('滑块动画目标 62%', document.getElementById('slider-indicator').style.left.length > 0);
