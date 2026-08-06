@@ -1,0 +1,12 @@
+{
+  "name": "lzbzq",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test/run.js"
+  },
+  "dependencies": {
+    "@vercel/kv": "^1.0.1"
+  }
+}

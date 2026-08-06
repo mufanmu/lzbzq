@@ -37,11 +37,18 @@
 
 ## 🛠 技术
 
-- 单文件 HTML，零依赖，双击即可运行
-- Canvas/图片滑块 + 弹簧-阻尼动画（惯性、摩擦、两端回弹）
-- 数据存于访客浏览器（localStorage），跨天自动结算
+- 前端：单文件 HTML，零依赖，图片滑块 + 弹簧-阻尼动画
+- 后端：Vercel Serverless Functions（`api/state.js`、`api/vote.js`）+ 免费 KV（Upstash Redis）
+- 每日一票：按访客 IP + TTL 至北京时间 0 点；跨天自动结算，仅档位变化写入时间线
 - Claude 风格设计规范见 [DESIGN.md](DESIGN.md)
+
+## 🚀 部署（Vercel）
+
+1. 在 [vercel.com](https://vercel.com) 用 GitHub 登录，**Import Project** 选择 `mufanmu/lzbzq`
+2. Storage 面板创建 **KV**（免费层足够），绑定到该项目
+3. 部署完成后 `KV_URL` / `KV_REST_API_URL` / `KV_REST_API_TOKEN` 自动注入，无需手动配置
+4. 打开部署域名即上线；本地测试：`npm test`（后端核心逻辑）、`node test/frontend.test.mjs`（前端流程）
 
 ## ⚠️ 免责声明
 
-娱乐项目，与官方无关。数据仅存于访客浏览器。
+娱乐项目，与官方无关。每日一票按 IP 限制，数据存于云端（KV）。
