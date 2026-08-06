@@ -20,6 +20,6 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({ ok: true, state });
   } catch (e) {
-    res.status(500).json({ error: 'internal', detail: String(e && e.message).slice(0, 300) });   // 临时调试
+    res.status(500).json({ error: 'internal' });
   }
 }
