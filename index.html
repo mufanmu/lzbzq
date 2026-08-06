@@ -74,6 +74,9 @@
     padding: 4px 12px; border-radius: var(--radius-pill);
     margin-left: 10px; vertical-align: middle;
   }
+  #tier-change { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  #tier-change .up { color: var(--success); }
+  #tier-change .down { color: var(--error); }
   #value-box { text-align: right; }
   #value { font-family: var(--serif); font-weight: 400; font-size: 34px; color: var(--ink); }
   .lbl { font-size: 12px; color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
@@ -234,7 +237,8 @@
 
   <section id="status" class="card card-cream">
     <div>
-      <span id="tier-big">—</span><span class="badge" id="tier-badge">当前档位</span>
+      <span id="tier-big">—</span><span class="badge" id="tier-badge">—</span>
+      <div id="tier-change"></div>
     </div>
     <div id="value-box">
       <div id="value">50%</div>
@@ -332,6 +336,7 @@
   /* ---------- DOM 引用 ---------- */
   var elTier = document.getElementById('tier-big');
   var elBadge = document.getElementById('tier-badge');
+  var elTierChange = document.getElementById('tier-change');
   var elValue = document.getElementById('value');
   var elMsg = document.getElementById('vote-msg');
   var elHot = document.getElementById('hot-review');
@@ -401,8 +406,22 @@
     if (!server) return;
     elTier.textContent = server.tierEmoji + ' ' + server.tier;
     elTier.style.color = server.tierColor;
-    elBadge.textContent = server.tier;
+    elBadge.textContent = server.todayValue + '%';     // 数值标签
     elValue.textContent = Math.round(displayValue) + '%';
+    // 当日变动提示：今日起始档位 → 当前档位
+    var startTier = tierOf(server.startValue);
+    var delta = server.todayValue - server.startValue;
+    if (server.todayVotes > 0) {
+      if (server.tier === startTier.name && Math.abs(delta) < 0.05) {
+        elTierChange.textContent = '今日持平（' + startTier.name + '）';
+        elTierChange.className = '';
+      } else {
+        elTierChange.innerHTML = '今日 ' + startTier.emoji + ' ' + startTier.name + ' → ' + server.tierEmoji + ' ' + server.tier +
+          '（<span class="' + (delta > 0 ? 'up' : 'down') + '">' + (delta > 0 ? '+' : '') + delta.toFixed(1) + '%</span>）';
+      }
+    } else {
+      elTierChange.textContent = '';
+    }
     if (server.hot) {
       var ht = null;
       for (var i = 0; i < TIERS.length; i++) if (TIERS[i].name === server.hot.name) { ht = TIERS[i]; break; }
@@ -598,11 +617,11 @@
     renderAll();
     startDanmaku();
     animate();
-    setInterval(function () {                    // 轻量轮询：弹幕与热评保持新鲜
+    setInterval(function () {                    // 轻量轮询（5s）：弹幕与热评保持新鲜
       fetchState().then(function () {
         renderAll();
       }).catch(function () {});
-    }, 10000);
+    }, 5000);
   }).catch(function () {
     pickMsg.textContent = '加载失败，请刷新重试';
     animate();
