@@ -156,6 +156,8 @@
     border-radius: var(--radius-md); padding: 10px 16px;
     font-size: 13px; color: var(--body); text-align: center;
   }
+  #hot-review.fade { animation: hotfade 0.5s ease; }
+  @keyframes hotfade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 
   /* ---- 时间线 ---- */
   #timeline-wrap { padding: 22px 24px; margin-bottom: 16px; }
@@ -385,6 +387,48 @@
     cannonAnim.goToAndPlay(0);
   }
 
+  /* ---------- 今日热评：情报轮播 ---------- */
+  var hotSlides = [];
+  var hotIdx = 0;
+  function buildHotSlides() {
+    var slides = [];
+    if (!server || !server.hot) return slides;
+    var ht = null;
+    for (var i = 0; i < TIERS.length; i++) if (TIERS[i].name === server.hot.name) { ht = TIERS[i]; break; }
+    // 1. 今日热评（最多档位 + 随机梗句）
+    slides.push('🔥 今日热评：' + server.hot.votes + ' 人投「' + ht.emoji + ' ' + ht.name + '」——' + randomMeme(ht));
+    // 2. 均值播报（含较昨日涨跌）
+    var delta = server.todayValue - server.startValue;
+    var deltaStr = (delta > 0 ? '+' : '') + delta.toFixed(1) + '%';
+    var cls = delta > 0 ? '📈' : delta < 0 ? '📉' : '➖';
+    slides.push(cls + ' 今日均值 ' + server.todayValue + '%（' + server.tierEmoji + ' ' + server.tier + '）· 较昨日 ' + deltaStr);
+    // 3. 顶流断层 / 全员一致
+    var sorted = Object.keys(server.voteDist).sort(function (a, b) { return server.voteDist[b] - server.voteDist[a]; });
+    if (sorted.length >= 2) {
+      var gap = server.voteDist[sorted[0]] - server.voteDist[sorted[1]];
+      slides.push('🥇 「' + sorted[0] + '」以 ' + server.voteDist[sorted[0]] + ' 票' + (gap > 0 ? '，断层领先「' + sorted[1] + '」' + gap + ' 票' : '，与「' + sorted[1] + '」并列第一'));
+    } else if (sorted.length === 1) {
+      slides.push('🥇 今日全员一致投「' + sorted[0] + '」——风评空前统一');
+    }
+    // 4. 无人问津
+    var zeroTiers = TIERS.filter(function (t) { return !server.voteDist[t.name]; });
+    if (zeroTiers.length) {
+      slides.push('🕳 今日无人投：' + zeroTiers.map(function (t) { return t.emoji + t.name; }).join('、'));
+    }
+    // 5. 参与人数
+    slides.push('🗳 今日已有 ' + server.todayVotes + ' 人参与投票');
+    return slides;
+  }
+  function showHotSlide() {
+    if (!hotSlides.length) return;
+    elHot.textContent = hotSlides[hotIdx % hotSlides.length];
+    hotIdx++;
+    elHot.classList.remove('fade');
+    void elHot.offsetWidth;          // 重触发淡入动画
+    elHot.classList.add('fade');
+  }
+  setInterval(function () { if (hotSlides.length) showHotSlide(); }, 6000);   // 6s 轮播一条
+
   /* ---------- 服务端状态 ---------- */
   var server = null;          // GET /api/state 返回
   var START_VALUE = 50;
@@ -468,11 +512,12 @@
       elTierChange.textContent = '';
     }
     if (server.hot) {
-      var ht = null;
-      for (var i = 0; i < TIERS.length; i++) if (TIERS[i].name === server.hot.name) { ht = TIERS[i]; break; }
+      hotSlides = buildHotSlides();
+      hotIdx = 0;
       elHot.style.display = 'block';
-      elHot.innerHTML = '🔥 今日热评：' + server.hot.votes + ' 人投「' + ht.emoji + ' ' + ht.name + '」——' + randomMeme(ht);
+      showHotSlide();
     } else {
+      hotSlides = [];
       elHot.style.display = 'none';
     }
     if (server.votedToday) {

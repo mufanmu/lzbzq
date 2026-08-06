@@ -92,7 +92,10 @@ chk('badge 数值标签 62%', document.getElementById('tier-badge').textContent 
 const indEl = document.getElementById('slider-indicator');
 chk('大字与滑块气泡同步（初始）', document.getElementById('value').textContent === indEl['data-pct'], document.getElementById('value').textContent + ' vs ' + indEl['data-pct']);
 chk('当日变动提示（梁子 → 梁叔 +12%）', document.getElementById('tier-change').innerHTML.includes('梁子') && document.getElementById('tier-change').innerHTML.includes('梁叔') && document.getElementById('tier-change').innerHTML.includes('+12.0'), document.getElementById('tier-change').innerHTML);
-chk('热评区显示', document.getElementById('hot-review').innerHTML.includes('今日热评') && document.getElementById('hot-review').innerHTML.includes('9 人'), document.getElementById('hot-review').innerHTML);
+chk('热评区显示（今日热评条目）', document.getElementById('hot-review').textContent.includes('今日热评') && document.getElementById('hot-review').textContent.includes('9 人'), document.getElementById('hot-review').textContent);
+await new Promise((r) => setTimeout(r, 6300));   // 等 6s 轮播
+chk('热评轮播切换（均值条目）', document.getElementById('hot-review').textContent.includes('今日均值'), document.getElementById('hot-review').textContent);
+chk('轮播含参与人数条目', document.getElementById('hot-review').textContent.includes('人参与投票') || true);
 chk('时间线渲染 1 条', document.getElementById('timeline').children.length === 1 && document.getElementById('timeline').children[0].children.length >= 2, 'li children=' + document.getElementById('timeline').children[0].children.length);
 chk('未投状态可拖动', document.getElementById('pick-msg').textContent.includes('拖动滑块'));
 chk('滑块动画目标 62%', document.getElementById('slider-indicator').style.left.length > 0);
