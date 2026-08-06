@@ -48,7 +48,7 @@
   .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
 
   /* ---- 头部：衬线大标题，编辑风 ---- */
-  header { text-align: center; padding: 40px 0 24px; }
+  header { text-align: center; padding: 40px 0 24px; position: relative; }
   h1 {
     font-family: var(--serif); font-weight: 400;
     font-size: 40px; line-height: 1.1; letter-spacing: -0.5px;
@@ -99,14 +99,14 @@
     background: var(--surface-soft);
   }
   #rheostat-stage { position: relative; }
-  /* ---- 弹幕层（z 轴最上） ---- */
+  /* ---- 弹幕层：盖在大标题 z 轴之上 ---- */
   #danmaku {
-    position: absolute; top: 0; left: 0; right: 0; height: 30%;
+    position: absolute; top: 0; left: 0; right: 0; height: 100%;
     pointer-events: none; overflow: hidden; z-index: 5;
   }
   .dm-row { position: absolute; left: 0; right: 0; height: 26px; }
-  .dm-row.r1 { top: 6%; }
-  .dm-row.r2 { top: 15%; }
+  .dm-row.r1 { top: 34%; }
+  .dm-row.r2 { top: 55%; }
   .dm-item {
     position: absolute; left: 100%; top: 0; white-space: nowrap;
     background: rgba(24, 23, 21, 0.72); color: #faf9f5;
@@ -226,6 +226,10 @@
   <header>
     <h1><span class="spike">✳</span> 梁子变祖器</h1>
     <p class="sub">社区风评阻尼器 · 每日一票 · 全站共享</p>
+    <div id="danmaku">
+      <div class="dm-row r1"></div>
+      <div class="dm-row r2"></div>
+    </div>
   </header>
 
   <section id="status" class="card card-cream">
@@ -243,10 +247,6 @@
       <img id="rheostat-img" src="images/bzq.png" alt="变祖器，拖动滑块打分" draggable="false">
       <div id="slider-indicator" data-pct="50%">
         <img id="slider-img" src="images/lz-2.png" alt="" draggable="false">
-      </div>
-      <div id="danmaku">
-        <div class="dm-row r1"></div>
-        <div class="dm-row r2"></div>
       </div>
     </div>
     <div id="img-placeholder">变祖器底图缺失<br><b>images/bzq.png</b><br>（当前为占位，拖动仍可打分）</div>
