@@ -92,9 +92,11 @@ chk('badge 数值标签 62%', document.getElementById('tier-badge').textContent 
 const indEl = document.getElementById('slider-indicator');
 chk('大字与滑块气泡同步（初始）', document.getElementById('value').textContent === indEl['data-pct'], document.getElementById('value').textContent + ' vs ' + indEl['data-pct']);
 chk('当日变动提示（梁子 → 梁叔 +12%）', document.getElementById('tier-change').innerHTML.includes('梁子') && document.getElementById('tier-change').innerHTML.includes('梁叔') && document.getElementById('tier-change').innerHTML.includes('+12.0'), document.getElementById('tier-change').innerHTML);
-chk('热评区显示（今日热评条目）', document.getElementById('hot-review').textContent.includes('今日热评') && document.getElementById('hot-review').textContent.includes('9 人'), document.getElementById('hot-review').textContent);
+chk('热评区显示（今日热评条目）', document.querySelector('#hot-slide').textContent.includes('今日热评') && document.querySelector('#hot-slide').textContent.includes('9 人'), document.querySelector('#hot-slide').textContent);
 await new Promise((r) => setTimeout(r, 6300));   // 等 6s 轮播
-chk('热评轮播切换（均值条目）', document.getElementById('hot-review').textContent.includes('今日均值'), document.getElementById('hot-review').textContent);
+console.log('轮播实际内容: ' + JSON.stringify(document.querySelector('#hot-slide').textContent));
+chk('热评轮播切换（均值条目）', document.querySelector('#hot-slide').textContent.includes('今日均值'), document.querySelector('#hot-slide').textContent);
+await new Promise((r) => setTimeout(r, 6300));   // 等 6s 轮播
 chk('轮播含参与人数条目', document.getElementById('hot-review').textContent.includes('人参与投票') || true);
 chk('时间线渲染 1 条', document.getElementById('timeline').children.length === 1 && document.getElementById('timeline').children[0].children.length >= 2, 'li children=' + document.getElementById('timeline').children[0].children.length);
 chk('未投状态可拖动', document.getElementById('pick-msg').textContent.includes('拖动滑块'));
@@ -128,9 +130,12 @@ chk('toast 显示梁神梗句', document.getElementById('toast').textContent.inc
 console.log('弹幕:');
 const dmRow1 = document.querySelector('.dm-row.r1');
 const dmRow2 = document.querySelector('.dm-row.r2');
+const dmRow3 = document.querySelector('.dm-row.r3');
 chk('第一行弹幕已播放（时间+选项）', dmRow1.children.length === 1 && dmRow1.children[0].textContent.includes('14:02') && dmRow1.children[0].textContent.includes('梁神'), JSON.stringify(dmRow1.children[0].textContent));
 await new Promise((r) => setTimeout(r, 2700));   // 等第二行（2600ms 错开）播放
 chk('第二行弹幕已播放（错开）', dmRow2.children.length === 1 && dmRow2.children[0].textContent.includes('14:05') && dmRow2.children[0].textContent.includes('梁子'));
+await new Promise((r) => setTimeout(r, 1300));   // 等第三行（3.6s 错开）播放
+chk('第三行弹幕已播放', dmRow3.children.length === 1 && dmRow3.children[0].textContent.includes('14:08'), JSON.stringify(dmRow3.children[0] && dmRow3.children[0].textContent));
 
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 process.exit(fail ? 1 : 0);

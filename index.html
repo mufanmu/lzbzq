@@ -108,8 +108,9 @@
     pointer-events: none; overflow: hidden; z-index: 5;
   }
   .dm-row { position: absolute; left: 0; right: 0; height: 26px; }
-  .dm-row.r1 { top: 34%; }
-  .dm-row.r2 { top: 55%; }
+  .dm-row.r1 { top: 26%; }
+  .dm-row.r2 { top: 45%; }
+  .dm-row.r3 { top: 64%; }
   .dm-item {
     position: absolute; left: 100%; top: 0; white-space: nowrap;
     background: rgba(24, 23, 21, 0.72); color: #faf9f5;
@@ -151,13 +152,18 @@
   #vote-msg.done { color: var(--primary-active); }
   #vote-msg.err { color: var(--error); }
   #hot-review {
-    display: none; margin: 0 auto 14px; max-width: 460px;
+    display: none; margin: 0 auto 14px; max-width: 460px; width: fit-content;
     background: var(--surface-soft); border: 1px solid var(--hairline);
     border-radius: var(--radius-md); padding: 10px 16px;
     font-size: 13px; color: var(--body); text-align: center;
+    overflow: hidden;
   }
-  #hot-review.fade { animation: hotfade 0.5s ease; }
-  @keyframes hotfade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+  #hot-slide { display: inline-block; }
+  #hot-slide.slide { animation: hotroll 0.45s ease; }
+  @keyframes hotroll {
+    from { transform: translateY(100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
 
   /* ---- 时间线 ---- */
   #timeline-wrap { padding: 22px 24px; margin-bottom: 16px; }
@@ -238,6 +244,7 @@
     <div id="danmaku">
       <div class="dm-row r1"></div>
       <div class="dm-row r2"></div>
+      <div class="dm-row r3"></div>
     </div>
   </header>
 
@@ -269,7 +276,7 @@
   </section>
 
   <div id="vote-msg"></div>
-  <div id="hot-review"></div>
+  <div id="hot-review"><div id="hot-slide"></div></div>
 
   <section id="timeline-wrap" class="card card-line">
     <h2>📜 事件记录</h2>
@@ -419,13 +426,14 @@
     slides.push('🗳 今日已有 ' + server.todayVotes + ' 人参与投票');
     return slides;
   }
+  var hotSlide = document.querySelector('#hot-slide');
   function showHotSlide() {
     if (!hotSlides.length) return;
-    elHot.textContent = hotSlides[hotIdx % hotSlides.length];
+    hotSlide.textContent = hotSlides[hotIdx % hotSlides.length];
     hotIdx++;
-    elHot.classList.remove('fade');
-    void elHot.offsetWidth;          // 重触发淡入动画
-    elHot.classList.add('fade');
+    hotSlide.classList.remove('slide');
+    void hotSlide.offsetWidth;          // 重触发上下滚动动画
+    hotSlide.classList.add('slide');
   }
   setInterval(function () { if (hotSlides.length) showHotSlide(); }, 6000);   // 6s 轮播一条
 
@@ -441,7 +449,7 @@
   }
 
   /* ---------- 弹幕：两行，时间 + 投票选项 ---------- */
-  var dmRows = [document.querySelector('.dm-row.r1'), document.querySelector('.dm-row.r2')];
+  var dmRows = [document.querySelector('.dm-row.r1'), document.querySelector('.dm-row.r2'), document.querySelector('.dm-row.r3')];
   var dmQueue = [];
   var dmCursor = 0;
   function updateDmQueue() {
@@ -467,7 +475,7 @@
   function playDm(row) {
     if (dmCursor >= dmQueue.length) {
       dmCursor = 0;
-      row._timer = setTimeout(function () { playDm(row); }, 2500);   // 播完暂停再循环
+      row._timer = setTimeout(function () { playDm(row); }, 1200);   // 播完暂停再循环
       return;
     }
     var item = dmQueue[dmCursor++];
@@ -475,7 +483,7 @@
     var span = document.createElement('span');
     span.className = 'dm-item';
     span.textContent = item.t + ' · 投了 ' + tier.emoji + ' ' + tier.name;
-    var dur = Math.max(5, 3.5 + span.textContent.length * 0.1);
+    var dur = Math.max(4, 3 + span.textContent.length * 0.08);   // 更快：3~6s
     span.style.animationDuration = dur + 's';
     span.addEventListener('animationend', function () {
       span.remove();
@@ -487,7 +495,8 @@
     if (dmRows[0]._started) return;
     dmRows[0]._started = true;
     playDm(dmRows[0]);
-    setTimeout(function () { playDm(dmRows[1]); }, 2600);   // 第二行错开
+    setTimeout(function () { playDm(dmRows[1]); }, 1800);
+    setTimeout(function () { playDm(dmRows[2]); }, 3600);
   }
 
   /* ---------- 渲染 ---------- */
