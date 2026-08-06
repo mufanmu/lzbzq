@@ -41,15 +41,15 @@ globalThis_.document = {
 
 /* ---------- fetch stub：模拟服务端 ---------- */
 let serverState = {
-  startValue: 50, todayValue: 62, tier: '梁文锋叔叔', tierEmoji: '🧧', tierColor: '#b0703c',
+  startValue: 50, todayValue: 62, tier: '梁叔', tierEmoji: '🧧', tierColor: '#b0703c',
   todayVotes: 15,
-  voteDist: { '梁文锋叔叔': 9, '梁子': 6 },
+  voteDist: { '梁叔': 9, '梁子': 6 },
   timeline: [{
     date: '2026-08-05', end: 83, tier: '梁圣', tierEmoji: '🙏', tierColor: '#cc785c',
     votes: 20, notes: ['📈 升级：梁子 → 梁圣'], dist: { '梁圣': 20 }
   }],
   votedToday: false,
-  hot: { name: '梁文锋叔叔', emoji: '🧧', color: '#b0703c', votes: 9 },
+  hot: { name: '梁叔', emoji: '🧧', color: '#b0703c', votes: 9 },
   recentVotes: [
     { t: '14:02', v: 100 }, { t: '14:05', v: 50 }, { t: '14:08', v: 83 }
   ]
@@ -87,11 +87,11 @@ await new Promise((r) => setTimeout(r, 30));   // 等 fetchState 完成
 
 console.log('初始渲染:');
 chk('调用了 /api/state', fetchCalls.includes('/api/state'));
-chk('状态栏档位 = 梁文锋叔叔', document.getElementById('tier-big').textContent.includes('梁文锋叔叔'), document.getElementById('tier-big').textContent);
+chk('状态栏档位 = 梁叔', document.getElementById('tier-big').textContent.includes('梁叔'), document.getElementById('tier-big').textContent);
 chk('badge 数值标签 62%', document.getElementById('tier-badge').textContent === '62%', document.getElementById('tier-badge').textContent);
 const indEl = document.getElementById('slider-indicator');
 chk('大字与滑块气泡同步（初始）', document.getElementById('value').textContent === indEl['data-pct'], document.getElementById('value').textContent + ' vs ' + indEl['data-pct']);
-chk('当日变动提示（梁子 → 梁文锋叔叔 +12%）', document.getElementById('tier-change').innerHTML.includes('梁子') && document.getElementById('tier-change').innerHTML.includes('梁文锋叔叔') && document.getElementById('tier-change').innerHTML.includes('+12.0'), document.getElementById('tier-change').innerHTML);
+chk('当日变动提示（梁子 → 梁叔 +12%）', document.getElementById('tier-change').innerHTML.includes('梁子') && document.getElementById('tier-change').innerHTML.includes('梁叔') && document.getElementById('tier-change').innerHTML.includes('+12.0'), document.getElementById('tier-change').innerHTML);
 chk('热评区显示', document.getElementById('hot-review').innerHTML.includes('今日热评') && document.getElementById('hot-review').innerHTML.includes('9 人'), document.getElementById('hot-review').innerHTML);
 chk('时间线渲染 1 条', document.getElementById('timeline').children.length === 1 && document.getElementById('timeline').children[0].children.length >= 2, 'li children=' + document.getElementById('timeline').children[0].children.length);
 chk('未投状态可拖动', document.getElementById('pick-msg').textContent.includes('拖动滑块'));

@@ -205,6 +205,10 @@
   footer .gh a:hover { text-decoration: underline; }
 
   /* ---- toast：深色 + 珊瑚描边 ---- */
+  #cannon-fx {
+    position: fixed; inset: 0; z-index: 98;
+    pointer-events: none; display: none;
+  }
   #toast {
     position: fixed; top: 18px; left: 50%;
     transform: translateX(-50%) translateY(-80px);
@@ -277,8 +281,10 @@
   <p class="gh"><a href="https://github.com/mufanmu/lzbzq" target="_blank" rel="noopener" aria-label="GitHub 仓库"><svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg> mufanmu/lzbzq</a></p>
 </footer>
 
+<div id="cannon-fx"></div>
 <div id="toast"></div>
 
+<script src="vendor/lottie_light.min.js"></script>
 <script>
 (function () {
   'use strict';
@@ -289,12 +295,12 @@
       memes: ['梁神！——核弹爆炸般的力量', '全网都在等一个梁神时刻', '梁神降临，美股震动', '封神之路，从此刻开始'] },
     { name: '梁圣',       value: 83,  emoji: '🙏', color: '#cc785c', desc: '开源精神拉满，「感谢梁圣开源」是最高礼赞',
       memes: ['梁圣的恩情还不完！', '感谢梁圣开源，AI 圈的反核导弹', '梁圣一出手，就知有没有', '圣人之恩，降价以报'] },
-    { name: '梁文锋叔叔', value: 67,  emoji: '🧧', color: '#b0703c', desc: '量化收割散户，早上领国补、晚上领美股',
-      memes: ['早上领国补，晚上领美股', '美股，就是梁文锋叔叔的提款机', '量化一出手，散户两行泪', '国补美股两头吃，散户韭菜地里哭'] },
+    { name: '梁叔', value: 67,  emoji: '🧧', color: '#b0703c', desc: '量化收割散户，早上领国补、晚上领美股',
+      memes: ['早上领国补，晚上领美股', '美股，就是梁叔的提款机', '量化一出手，散户两行泪', '国补美股两头吃，散户韭菜地里哭'] },
     { name: '梁子',       value: 50,  emoji: '😐', color: '#8e8b82', desc: '与「良子」谐音，食言太多吃成了梁子',
       memes: ['梁圣，还是梁子？——凭产品表现定称呼', '食言太多，吃成了梁子', '和网红良子撞名的男人', '梁子本子，说好的发布呢'] },
     { name: '牢梁',       value: 33,  emoji: '🕳', color: '#5f6b7a', desc: '晋升牢字辈，与牢大、牢张并称互联网三幻神',
-      memes: ['牢字辈三幻神，恭迎牢梁归位', '牢大、牢张、牢梁，互联网三幻神', '牢里牢气，但还有机会翻案', '关于恢复梁文锋名誉的决定（待发布）'] },
+      memes: ['牢字辈三幻神，恭迎牢梁归位', '牢大、牢张、牢梁，互联网三幻神', '牢里牢气，但还有机会翻案', '关于恢复梁叔名誉的决定（待发布）'] },
     { name: '小难梁',     value: 17,  emoji: '🥀', color: '#5a4a42', desc: '跳票太久地位再降，小难梁拿不出大赢鲸',
       memes: ['小难梁拿不出大赢鲸', '深陷时空裂缝，无法自拔', '跳票跳进了小难梁', '小难梁：我太难了'] },
     { name: '梁西皮',     value: 0,   emoji: '🖤', color: '#3d3a35', desc: '江浙骂娘口头禅谐音，风评谷底',
@@ -354,6 +360,29 @@
     toastEl.classList.add('show');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 3400);
+  }
+
+  /* ---------- 投票开炮特效（Lottie） ---------- */
+  var cannonFx = document.getElementById('cannon-fx');
+  var cannonAnim = null;
+  if (typeof window !== 'undefined' && window.lottie) {
+    try {
+      cannonAnim = lottie.loadAnimation({
+        container: cannonFx,
+        renderer: 'svg',
+        loop: false,
+        autoplay: false,
+        path: 'lottie/cannon.json',
+        rendererSettings: { preserveAspectRatio: 'xMidYMid slice' }
+      });
+      cannonAnim.addEventListener('complete', function () { cannonFx.style.display = 'none'; });
+      cannonAnim.addEventListener('data_failed', function () { cannonFx.style.display = 'none'; });
+    } catch (e) { cannonAnim = null; }
+  }
+  function fireCannon() {
+    if (!cannonAnim) return;
+    cannonFx.style.display = 'block';
+    cannonAnim.goToAndPlay(0);
   }
 
   /* ---------- 服务端状态 ---------- */
@@ -553,6 +582,7 @@
         var t = tierOf(v);
         elMsg.className = 'done';
         elMsg.textContent = '已投 ' + v + '%（' + t.emoji + ' ' + t.name + '）';
+        fireCannon();                             // 投票成功：开炮庆祝
         if (server.todayValue >= 100) toast('💥 梁神！——核弹爆炸般的力量！！');
         else if (server.todayValue <= 0) toast('🕳 归零达成「梁西皮」—— 即便此刻，也无人以 ÷ 称他');
         else toast(t.emoji + ' ' + randomMeme(t));
