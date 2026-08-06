@@ -406,8 +406,8 @@
     if (!server) return;
     elTier.textContent = server.tierEmoji + ' ' + server.tier;
     elTier.style.color = server.tierColor;
-    elBadge.textContent = server.todayValue + '%';     // 数值标签
-    elValue.textContent = Math.round(displayValue) + '%';
+    elBadge.textContent = server.todayValue + '%';     // 数值标签（即时精确值）
+    elValue.textContent = Math.round(server.todayValue) + '%';   // 今日电阻：直接显示前端已拿到的最新值，不等动画
     // 当日变动提示：今日起始档位 → 当前档位
     var startTier = tierOf(server.startValue);
     var delta = server.todayValue - server.startValue;

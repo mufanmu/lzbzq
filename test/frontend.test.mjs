@@ -90,6 +90,7 @@ console.log('初始渲染:');
 chk('调用了 /api/state', fetchCalls.includes('/api/state'));
 chk('状态栏档位 = 梁文锋叔叔', document.getElementById('tier-big').textContent.includes('梁文锋叔叔'), document.getElementById('tier-big').textContent);
 chk('badge 数值标签 62%', document.getElementById('tier-badge').textContent === '62%', document.getElementById('tier-badge').textContent);
+chk('今日电阻大字即时显示 62%（不等动画）', document.getElementById('value').textContent === '62%', document.getElementById('value').textContent);
 chk('当日变动提示（梁子 → 梁文锋叔叔 +12%）', document.getElementById('tier-change').innerHTML.includes('梁子') && document.getElementById('tier-change').innerHTML.includes('梁文锋叔叔') && document.getElementById('tier-change').innerHTML.includes('+12.0'), document.getElementById('tier-change').innerHTML);
 chk('热评区显示', document.getElementById('hot-review').innerHTML.includes('今日热评') && document.getElementById('hot-review').innerHTML.includes('9 人'), document.getElementById('hot-review').innerHTML);
 chk('时间线渲染 1 条', document.getElementById('timeline').children.length === 1 && document.getElementById('timeline').children[0].children.length >= 2, 'li children=' + document.getElementById('timeline').children[0].children.length);
