@@ -182,12 +182,13 @@
     background: var(--canvas); border: 2px solid var(--hairline);
   }
   #timeline li .date { font-size: 12px; color: var(--muted-soft); }
-  #timeline li .row { font-size: 15px; margin-top: 2px; color: var(--ink); }
+  #timeline li .row { font-size: 15px; margin-top: 2px; color: var(--ink); display: flex; align-items: center; gap: 8px; }
   #timeline li .tier-badge {
-    display: inline-block; padding: 1px 10px; border-radius: var(--radius-pill);
-    font-size: 12px; font-weight: 500; background: var(--surface-card);
-    color: var(--ink); margin-right: 8px;
+    display: inline-block; padding: 3px 14px; border-radius: var(--radius-pill);
+    font-size: 15px; font-weight: 600; background: var(--surface-card);
+    color: var(--ink);
   }
+  #timeline li .end { font-size: 12px; color: var(--muted); font-weight: 400; }
   #timeline li .notes { font-size: 12px; color: var(--muted); margin-top: 4px; }
   #timeline li .notes .up { color: var(--success); }
   #timeline li .notes .down { color: var(--error); }
@@ -560,7 +561,10 @@
       badge.style.color = r.tierColor;
       badge.textContent = r.tierEmoji + ' ' + r.tier;
       row.appendChild(badge);
-      row.appendChild(document.createTextNode('终值 ' + r.end + '%'));
+      var end = document.createElement('span');
+      end.className = 'end';
+      end.textContent = '终值 ' + r.end + '%';
+      row.appendChild(end);
       li.appendChild(row);
       var date = document.createElement('div');
       date.className = 'date';
@@ -755,7 +759,7 @@
 
   animate();                                   // 先启动动画循环，fetch 未回时滑块也已就位
   fetchState().then(function () {
-    displayValue = server.startValue;          // 从今日起点阻尼滑向社区均值
+    // 不重置 displayValue：保持初始 50，由阻尼动画自然弹向今日数值（入场动画）
     resetPick();
     renderAll();
     startDanmaku();
