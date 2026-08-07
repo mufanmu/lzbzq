@@ -99,6 +99,83 @@ const store = createMemoryStore();
   const st2 = await computeState(store2, '1.1.1.1', DAY1);
   chk('对象形式 lrange 也能解析出弹幕', st2.recentVotes.length === 1 && st2.recentVotes[0].v === 83, JSON.stringify(st2.recentVotes));
 
+  // ===== 加固：ensureNewDay 自愈 / 断档 / 幂等 / 冷启动 =====
+  console.log('ensureNewDay 自愈与幂等:');
+  // 1. state 丢失自愈：8-01 与 8-03 有票，8-02 无票，now=8-04
+  {
+    const s = createMemoryStore();
+    await s.hincrby('lzbzq:votes:2026-08-01', '83', 2);
+    await s.hincrby('lzbzq:votes:2026-08-01', '100', 1);
+    await s.hincrby('lzbzq:votes:2026-08-03', '50', 1);
+    let st = await ensureNewDay(s, new Date(T0 - 2 * 86400000)); // 8-04
+    chk('自愈：从最早有票日回放（lastDate=8-04）', st.lastDate === '2026-08-04', JSON.stringify(st));
+    chk('自愈：链式继承 8-01(88.7)→8-02 跳过→8-03(50)', st.startValue === 50, 'startValue=' + st.startValue);
+    const tl = (await s.lrange('lzbzq:timeline', 0, -1)).map((y) => JSON.parse(y));
+    chk('自愈：8-01/8-03 均补总结且无 8-02（最新在前）', tl.length === 2 && tl[0].date === '2026-08-03' && tl[0].end === 50 && tl[1].date === '2026-08-01' && tl[1].end === 88.7, JSON.stringify(tl.map((r) => r.date + ':' + r.end)));
+  }
+  // 2. 多天未访问断档：lastDate=8-01 有票、8-03 有票、8-02/8-04 无，now=8-05
+  {
+    const s = createMemoryStore();
+    await s.setJSON('lzbzq:state', { lastDate: '2026-08-01', startValue: 50 });
+    await s.hincrby('lzbzq:votes:2026-08-01', '60', 1);
+    await s.hincrby('lzbzq:votes:2026-08-03', '100', 1);
+    let st = await ensureNewDay(s, new Date(T0 - 1 * 86400000)); // 8-05
+    chk('断档：中间有票日全部结算（startValue=100）', st.lastDate === '2026-08-05' && st.startValue === 100, JSON.stringify(st));
+    const tl2 = (await s.lrange('lzbzq:timeline', 0, -1)).map((y) => JSON.parse(y));
+    chk('断档：timeline 两条且 8-03 最新在前', tl2.length === 2 && tl2[0].date === '2026-08-03' && tl2[1].date === '2026-08-01');
+  }
+  // 3. 幂等：timeline 已有 8-06 总结 → 跨天不重复写
+  {
+    const s = createMemoryStore();
+    await s.setJSON('lzbzq:state', { lastDate: '2026-08-06', startValue: 50 });
+    await s.hincrby('lzbzq:votes:2026-08-06', '83', 1);
+    await s.lpush('lzbzq:timeline', JSON.stringify(settleDay('2026-08-06', [83], 50)));
+    let st = await ensureNewDay(s, DAY2); // 8-07
+    const tl3 = await s.lrange('lzbzq:timeline', 0, -1);
+    chk('幂等：已有总结不重复写，startValue 仍链式更新', tl3.length === 1 && st.startValue === 83, 'len=' + tl3.length + ' start=' + st.startValue);
+  }
+  // 4. 冷启动：无任何历史票 → startValue=50 且立即落库
+  {
+    const s = createMemoryStore();
+    let st = await ensureNewDay(s, DAY1);
+    chk('冷启动：无历史票 startValue=50', st.lastDate === '2026-08-06' && st.startValue === 50);
+    chk('冷启动即落库（避免每请求重复扫描）', s._raw.has('lzbzq:state'));
+  }
+  // 5. 自愈 + timeline 已有部分总结：8-05 已总结、8-06 有票未总结
+  {
+    const s = createMemoryStore();
+    await s.hincrby('lzbzq:votes:2026-08-05', '50', 2);
+    await s.hincrby('lzbzq:votes:2026-08-06', '83', 1);
+    await s.lpush('lzbzq:timeline', JSON.stringify(settleDay('2026-08-05', [50, 50], 50)));
+    let st = await ensureNewDay(s, DAY2); // 8-07
+    const tl5 = (await s.lrange('lzbzq:timeline', 0, -1)).map((y) => JSON.parse(y));
+    chk('自愈+已有总结：8-05 不重复、8-06 补结算', tl5.length === 2 && tl5[0].date === '2026-08-06' && tl5[1].date === '2026-08-05' && st.startValue === 83, JSON.stringify(tl5.map((r) => r.date)));
+  }
+  // 6. 回放上限 MAX_SETTLE_DAYS：断档 >90 天时截断，下次继续，票不丢
+  {
+    const s = createMemoryStore();
+    await s.setJSON('lzbzq:state', { lastDate: '2026-01-01', startValue: 50 }); // 距 8-06 约 217 天
+    await s.hincrby('lzbzq:votes:2026-04-10', '67', 1);   // 第 100 天，超过单次 90 天上限
+    let st = await ensureNewDay(s, DAY1); // 8-06：回放 90 天到 4-01，未到 4-10
+    chk('上限截断：lastDate 停在截断点（非 today）', st.lastDate === '2026-04-01', st.lastDate);
+    chk('截断时票未结算（timeline 空）', (await s.lrange('lzbzq:timeline', 0, -1)).length === 0);
+    st = await ensureNewDay(s, DAY1); // 第二次：从 4-01 继续 90 天到 6-30，覆盖 4-10
+    chk('继续回放：4-10 票已结算', (await s.lrange('lzbzq:timeline', 0, -1)).length === 1 && st.lastDate === '2026-06-30', st.lastDate);
+    st = await ensureNewDay(s, DAY1); // 第三次：完成到 today
+    chk('三次后完成且票不丢', st.lastDate === '2026-08-06' && st.startValue === 67, JSON.stringify(st));
+  }
+  // 7. SETNX 幂等：settled key 已存在（并发另一请求已抢占）→ 不重复写总结
+  {
+    const s = createMemoryStore();
+    await s.setJSON('lzbzq:state', { lastDate: '2026-08-06', startValue: 50 });
+    await s.hincrby('lzbzq:votes:2026-08-06', '83', 1);
+    await s.set('lzbzq:settled:2026-08-06', '1');          // 模拟并发已抢占
+    await s.lpush('lzbzq:timeline', JSON.stringify(settleDay('2026-08-06', [83], 50)));
+    let st = await ensureNewDay(s, DAY2); // 8-07
+    const tl7 = await s.lrange('lzbzq:timeline', 0, -1);
+    chk('SETNX 幂等：并发抢占后不重复写，startValue 仍更新', tl7.length === 1 && st.startValue === 83, 'len=' + tl7.length + ' start=' + st.startValue);
+  }
+
   console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
   process.exit(fail ? 1 : 0);
 })();
