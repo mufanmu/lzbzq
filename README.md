@@ -30,7 +30,7 @@
 
 ## 🖥 在线体验
 
-**https://lzbzq.vercel.app/**
+**EdgeOne Pages 部署地址**（控制台查看分配的二级域名，国内免代理直连）
 
 全站共享：所有人投同一根电阻，今日热评、一周风评、弹幕全网可见；每日一票按 IP 限制（北京时间 0 点重置）。
 
@@ -41,16 +41,30 @@
 ## 🛠 技术
 
 - 前端：单文件 HTML，零依赖，图片滑块 + 弹簧-阻尼动画
-- 后端：Vercel Serverless Functions（`api/state.js`、`api/vote.js`）+ 免费 KV（Upstash Redis）
-- 每日一票：按访客 IP + TTL 至北京时间 0 点；跨天自动结算，每日一条总结写入「一周风评」（带梗，保留最近 7 天循环覆盖）
+- 后端：EdgeOne Pages Functions（`functions/api/state.js`、`functions/api/vote.js`）+ EdgeOne KV（免费版）
+- 存储适配：EdgeOne KV 仅提供 put/get/delete/list，`lib/eo-kv-store.js` 用 JSON 模拟 hash/list/setnx/scan；key 含冒号、连字符、点号需可逆编码为 `[0-9A-Za-z_]`
+- 每日一票：按访客 IP（`request.eo.clientIp`）；跨天自动结算，每日一条总结写入「一周风评」（带梗，保留最近 7 天循环覆盖）
 - Claude 风格设计规范见 [DESIGN.md](DESIGN.md)
 
-## 🚀 部署（Vercel）
+## 🚀 部署（EdgeOne Pages，国内免代理访问）
 
-1. 在 [vercel.com](https://vercel.com) 用 GitHub 登录，**Import Project** 选择 `mufanmu/lzbzq`
-2. Storage 面板创建 **KV**（免费层足够），绑定到该项目
-3. 部署完成后 `KV_URL` / `KV_REST_API_URL` / `KV_REST_API_TOKEN` 自动注入，无需手动配置
-4. 打开部署域名即上线；本地测试：`npm test`（后端核心逻辑）、`node test/frontend.test.mjs`（前端流程）
+1. 在 [EdgeOne Pages](https://edgeone.cloud.tencent.com/) 用腾讯云账号登录，开通免费版
+2. **KV 存储** → 创建命名空间（如 `lzbzq_kv`）
+3. **新建项目** → 导入 GitHub 仓库 `mufanmu/lzbzq`；构建命令留空，输出目录 `.`（根目录，无构建步骤）
+4. 项目详情 → **KV 存储** → 绑定命名空间，**变量名必须填 `lzbzq_kv`**（函数以同名全局变量访问）
+5. 部署完成后访问分配的二级域名；本地测试：`npm test`（后端核心逻辑 + KV 适配器）、`node test/frontend.test.mjs`（前端流程）
+
+### 历史数据迁移（一次性）
+
+仓库内含临时迁移函数 `functions/api/migrate.js`，部署后执行：
+
+```bash
+curl -X POST 'https://<域名>/api/migrate' \
+  -H 'Content-Type: application/json' \
+  --data-binary @backup/backup-2026-08-07T01-35-38-756Z.json
+```
+
+验证 `/api/state` 数据正确后，**删除 `functions/api/migrate.js` 并重新部署**（避免数据被误覆盖）。
 
 ## ⚠️ 免责声明
 
