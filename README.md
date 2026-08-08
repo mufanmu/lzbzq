@@ -30,7 +30,7 @@
 
 ## 🖥 在线体验
 
-**EdgeOne Pages 部署地址**（控制台查看分配的二级域名，国内免代理直连）
+**https://lzbzq.vercel.app/**（现网，海外访问；国内正在迁移至 EdgeOne Pages，完成后此处更新为新地址）
 
 全站共享：所有人投同一根电阻，今日热评、一周风评、弹幕全网可见；每日一票按 IP 限制（北京时间 0 点重置）。
 
@@ -41,7 +41,9 @@
 ## 🛠 技术
 
 - 前端：单文件 HTML，零依赖，图片滑块 + 弹簧-阻尼动画
-- 后端：EdgeOne Pages Functions（`functions/api/state.js`、`functions/api/vote.js`）+ EdgeOne KV（免费版）
+- 后端（过渡期双平台并存）：
+  - 现网：Vercel Serverless Functions（`api/`）+ Upstash Redis
+  - 新平台：EdgeOne Pages Functions（`functions/api/`）+ EdgeOne KV（免费版），两套目录约定互不冲突，切换完成后删除 Vercel 部分
 - 存储适配：EdgeOne KV 仅提供 put/get/delete/list，`lib/eo-kv-store.js` 用 JSON 模拟 hash/list/setnx/scan；key 含冒号、连字符、点号需可逆编码为 `[0-9A-Za-z_]`
 - 每日一票：按访客 IP（`request.eo.clientIp`）；跨天自动结算，每日一条总结写入「一周风评」（带梗，保留最近 7 天循环覆盖）
 - Claude 风格设计规范见 [DESIGN.md](DESIGN.md)
